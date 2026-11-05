@@ -1,0 +1,46 @@
+@import "@fontsource/cairo/400.css";
+@import "@fontsource/cairo/600.css";
+@import "@fontsource/cairo/700.css";
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Cairo", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, "Courier New", monospace;
+  --color-brand-50: #ecfeff;
+  --color-brand-100: #cffafe;
+  --color-brand-500: #0891b2;
+  --color-brand-600: #0e7490;
+  --color-brand-700: #155e75;
+  --color-ink-900: #0b1220;
+  --color-ink-800: #111a2e;
+  --color-ink-700: #1b2742;
+}
+
+html,
+body {
+  font-family: var(--font-sans);
+  background: #f3f6fb;
+}
+
+/* Technical identifiers (IP, MAC, ports, paths) are always rendered left-to-right. */
+.ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: var(--font-mono);
+}
+
+.card-hover {
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.card-hover:hover {
+  box-shadow: 0 8px 24px -12px rgb(15 23 42 / 0.25);
+  transform: translateY(-1px);
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgb(8 145 178 / 0.45); }
+  100% { box-shadow: 0 0 0 10px rgb(8 145 178 / 0); }
+}
+.live-dot {
+  animation: pulse-ring 1.6s infinite;
+}

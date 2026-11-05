@@ -1,0 +1,22 @@
+RASED (راصد) — Proprietary License
+Copyright (c) 2026 <owner>. All rights reserved.
+
+This software and its source code are the confidential and proprietary property of the
+copyright holder. No permission is granted to use, copy, modify, merge, publish, distribute,
+sublicense, or sell copies of this software, in whole or in part, without the prior written
+consent of the copyright holder.
+
+RASED is intended solely for discovery, inventory, security assessment, and administration of
+networks and devices that the operator owns or is explicitly authorized to manage. The operator
+is responsible for ensuring such authorization. Use against systems you do not own or are not
+authorized to assess may be unlawful.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+ملاحظة: هذا المشروع مملوك ملكية خاصة لصاحب حقوق النشر. استبدل <owner> باسمك/اسم جهتك.
+إن رغبت في ترخيص مفتوح المصدر (مثل MIT أو Apache-2.0) فاستبدل محتوى هذا الملف بنصّه.

@@ -1,0 +1,19 @@
+# Runtime dependencies (direct). Exact versions + hashes are in requirements.lock.
+fastapi
+uvicorn[standard]
+sqlalchemy>=2.0,<2.1
+alembic
+psycopg[binary]
+pydantic
+pydantic-settings
+argon2-cffi
+cryptography
+psutil
+pypsrp
+paramiko
+defusedxml
+ldap3
+openpyxl
+puresnmp
+winkerberos ; sys_platform == 'win32'
+smbprotocol
