@@ -6,11 +6,6 @@ frontend/dist
 certs
 backups
 logs
-backend/tests
-backend/requirements-dev.txt
-backend/.pytest_cache
-backend/.ruff_cache
 .git
 .vscode
 docs
-pro.md

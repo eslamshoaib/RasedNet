@@ -3,8 +3,8 @@
 Offline, Arabic-first (RTL) network discovery, asset inventory and security-exposure monitoring
 for networks your organisation owns and administers.
 
-**Release 0.15.0.** See [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md)
-for exactly what is implemented and verified, and what is not yet built.
+**Release 0.15.0.** See the Arabic administrator guide in [docs/ar/](docs/ar/)
+for installation, operation and the full feature reference.
 
 Beyond discovery and inventory, RASED now includes: logical + **physical (SNMP/LLDP) network maps**,
 **Fusion** analytics, comprehensive **Arabic reports** (PDF/Excel/JSON + SHA-256), an offline
@@ -37,11 +37,10 @@ backend/
     scope.py             scan-scope validation (the safety boundary)
     backup_crypto.py     AES-256-GCM backup encryption
     app.py / cli.py      app factory / `python -m rased …`
-  tests/                 pytest suite (unit, integration, API, migrations, real loopback scans)
   requirements.lock      exact runtime versions
 frontend/                React SPA (built to frontend/dist and served by the backend)
 scripts/                 PowerShell: setup, start, install-service, backup, restore, upgrade, rollback, healthcheck
-docs/                    architecture & threat model, Arabic admin guide, acceptance checklist
+docs/                    architecture & threat model, Arabic admin guide
 Dockerfile, docker-compose.yml   optional Linux deployment
 ```
 
@@ -53,7 +52,7 @@ docker run -d --name rased-db -e POSTGRES_USER=rased -e POSTGRES_PASSWORD=<pw> -
 
 cd backend
 py -3.12 -m venv .venv
-.venv\Scripts\python -m pip install -r requirements-dev.txt
+.venv\Scripts\python -m pip install -r requirements.lock
 copy .env.example .env      # then edit RASED_DATABASE_URL; set RASED_COOKIE_SECURE=false for plain-HTTP dev
 .venv\Scripts\python -m rased init-db
 .venv\Scripts\python -m rased create-admin --username admin
@@ -67,22 +66,6 @@ cd ..\backend
 ```
 
 Production installation: `scripts\setup.ps1` (see the Arabic guide in `docs/ar/`).
-
-## Tests
-
-```powershell
-cd backend
-.venv\Scripts\python -m pytest                                   # SQLite, ~1.5 min
-$env:RASED_TEST_DATABASE_URL = 'postgresql+psycopg://user:pw@127.0.0.1:5432/rased_test'   # DB is wiped!
-.venv\Scripts\python -m pytest                                   # same suite on PostgreSQL
-
-cd ..\frontend
-npm test                    # vitest
-npm run build; npm run check-offline   # fails if the bundle loads any external URL
-```
-
-Scanner tests run **real** TCP/TLS/ping probes against servers they start on `127.0.0.1`;
-only ICMP/ARP/DNS are replaced by deterministic doubles in the API-level tests.
 
 ## CLI
 

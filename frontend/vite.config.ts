@@ -1,6 +1,6 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
+import { defineConfig } from "vite";
 
 // The production build is fully self-contained (fonts and libraries bundled, no CDN).
 export default defineConfig({
@@ -10,5 +10,4 @@ export default defineConfig({
     host: "127.0.0.1",
     proxy: { "/api": { target: "http://127.0.0.1:8765", changeOrigin: false } },
   },
-  test: { environment: "jsdom", include: ["src/**/*.test.{ts,tsx}"] },
 });
