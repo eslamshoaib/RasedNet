@@ -1,0 +1,41 @@
+name: "🐞 Bug report · بلاغ خطأ"
+description: "Report a problem in RasedNet · أبلِغ عن مشكلة في راصد"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **⚠️ Privacy — خصوصية:** Do **not** paste real IP addresses, hostnames, MAC
+        addresses, credentials, or any private data. Redact or replace them with
+        examples (e.g. `192.0.2.10`, `host.example.local`).
+        من فضلك **لا** تلصق عناوين IP أو أسماء أجهزة أو بيانات اعتماد حقيقية — استبدلها بأمثلة.
+  - type: input
+    id: version
+    attributes:
+      label: "Version / commit · الإصدار"
+      placeholder: "v1.0.0 or commit SHA"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: "What happened? · ماذا حدث؟"
+      description: "Describe the bug and what you expected · صف المشكلة والسلوك المتوقع"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Steps to reproduce · خطوات إعادة الإنتاج"
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: "Environment · البيئة"
+      description: "OS, Python version, PostgreSQL version, browser · نظام التشغيل والإصدارات"
+    validations:
+      required: false

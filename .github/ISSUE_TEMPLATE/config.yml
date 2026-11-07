@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "🔒 Report a security vulnerability · الإبلاغ عن ثغرة أمنية"
+    url: https://github.com/eslamshoaib/RasedNet/security/advisories/new
+    about: "Please report vulnerabilities privately, not as a public issue · أبلِغ عن الثغرات بشكل خاص"
+  - name: "💬 Questions & ideas · أسئلة وأفكار"
+    url: https://github.com/eslamshoaib/RasedNet/discussions
+    about: "Ask questions or share ideas in Discussions · اطرح أسئلتك في النقاشات"
