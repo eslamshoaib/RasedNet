@@ -17,6 +17,7 @@ export interface User {
   username: string;
   display_name: string;
   is_active: boolean;
+  must_change_password: boolean;
   role: Role;
   last_login_at: string | null;
   locked_until: string | null;

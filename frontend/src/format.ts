@@ -1,27 +1,34 @@
+import { getLang, t } from "./i18n";
 import { DEVICE_TYPES, label } from "./labels";
 
-// Arabic text with Latin digits keeps dates consistent with IPs, ports and MAC addresses.
-const dateTime = new Intl.DateTimeFormat("ar-EG-u-nu-latn", { dateStyle: "medium", timeStyle: "short" });
-const number = new Intl.NumberFormat("ar-EG-u-nu-latn");
+// Latin digits keep dates consistent with IPs, ports and MAC addresses in both languages.
+const dateTimeAr = new Intl.DateTimeFormat("ar-EG-u-nu-latn", { dateStyle: "medium", timeStyle: "short" });
+const dateTimeEn = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" });
+const numberAr = new Intl.NumberFormat("ar-EG-u-nu-latn");
+const numberEn = new Intl.NumberFormat("en-US");
 
 export function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
   const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? "—" : dateTime.format(d);
+  if (Number.isNaN(d.getTime())) return "—";
+  return (getLang() === "en" ? dateTimeEn : dateTimeAr).format(d);
 }
 
 export function formatNumber(value: number): string {
-  return number.format(value);
+  return (getLang() === "en" ? numberEn : numberAr).format(value);
 }
 
 export function percent(confidence: number): string {
   return `${Math.round(Math.max(0, Math.min(1, confidence)) * 100)}%`;
 }
 
-/** "نوع الجهاز: هاتف محمول — الثقة 82%" or "نوع الجهاز: غير مؤكد — يتطلب مراجعة". */
 export function deviceTypeSentence(deviceType: string, confidence: number): string {
-  if (deviceType === "unknown" || confidence <= 0) return "نوع الجهاز: غير مؤكد — يتطلب مراجعة";
-  return `نوع الجهاز: ${label(DEVICE_TYPES, deviceType)} — الثقة ${percent(confidence)}`;
+  if (deviceType === "unknown" || confidence <= 0)
+    return t("نوع الجهاز: غير مؤكد — يتطلب مراجعة", "Device type: unconfirmed — needs review");
+  const type = label(DEVICE_TYPES, deviceType);
+  return getLang() === "en"
+    ? `Device type: ${type} — confidence ${percent(confidence)}`
+    : `نوع الجهاز: ${type} — الثقة ${percent(confidence)}`;
 }
 
 export function splitList(text: string): string[] {

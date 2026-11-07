@@ -5,7 +5,9 @@ import { ApiError } from "./api";
 import { AuthProvider, useAuth } from "./auth";
 import { Layout } from "./components/Layout";
 import { Loading } from "./components/ui";
+import { I18nProvider, t } from "./i18n";
 import { LoginPage } from "./pages/Login";
+import { ForcePasswordChange } from "./pages/ForcePasswordChange";
 
 // Pages load on demand: charts (ECharts) and the network map (Cytoscape) never slow down other pages.
 const named = <T extends Record<string, unknown>>(loader: () => Promise<T>, key: keyof T) =>
@@ -47,13 +49,14 @@ const queryClient = new QueryClient({
 
 function Guard({ permission, children }: { permission: string; children: ReactNode }) {
   const { can } = useAuth();
-  return can(permission) ? <>{children}</> : <p className="text-sm text-slate-600">ليست لديك صلاحية لعرض هذه الصفحة.</p>;
+  return can(permission) ? <>{children}</> : <p className="text-sm text-slate-600">{t("ليست لديك صلاحية لعرض هذه الصفحة.", "You do not have permission to view this page.")}</p>;
 }
 
 function Shell() {
   const { me, loading } = useAuth();
   if (loading) return <Loading />;
   if (!me) return <LoginPage />;
+  if (me.user.must_change_password) return <ForcePasswordChange />;
   const g = (permission: string, el: ReactNode) => <Guard permission={permission}>{el}</Guard>;
   return (
     <Routes>
@@ -89,12 +92,14 @@ function Shell() {
 
 export function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <Shell />
-        </BrowserRouter>
-      </AuthProvider>
-    </QueryClientProvider>
+    <I18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <BrowserRouter>
+            <Shell />
+          </BrowserRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    </I18nProvider>
   );
 }

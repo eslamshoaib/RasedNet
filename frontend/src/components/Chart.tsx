@@ -4,7 +4,7 @@ import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { useEffect, useRef } from "react";
 
-// Only the chart types RASED uses are bundled (much smaller than the full ECharts build).
+// Only the chart types RasedNet uses are bundled (much smaller than the full ECharts build).
 echarts.use([BarChart, LineChart, PieChart, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer]);
 
 const FONT = '"Cairo", "Segoe UI", Tahoma, sans-serif';

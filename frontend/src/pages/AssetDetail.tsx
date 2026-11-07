@@ -7,10 +7,11 @@ import { api, errorMessage } from "../api";
 import { useAuth } from "../auth";
 import { Badge, Button, Card, ErrorBox, Field, inputClass, Loading, Ltr, SEVERITY_TONE, STATUS_TONE } from "../components/ui";
 import { deviceTypeSentence, formatDate, percent } from "../format";
-import { ASSET_STATUS, CRITICALITY, EVENT_KINDS, EXPOSURE, ID_METHOD, label, METHODS, OS_FAMILIES, SEVERITY } from "../labels";
+import { getLang, t } from "../i18n";
+import { ASSET_STATUS, CRITICALITY, EVENT_KINDS, EXPOSURE, ID_METHOD, label, type LabelMap, METHODS, OS_FAMILIES, SEVERITY } from "../labels";
 import type { AssetDetail, Credential, Execution, Job, Profile, SmbBrowse, SmbShares } from "../types";
 
-const ID_KIND: Record<string, string> = { mac: "عنوان MAC", hostname: "اسم الجهاز", ipv4: "IPv4", ipv6: "IPv6" };
+const ID_KIND: LabelMap = { mac: ["عنوان MAC", "MAC address"], hostname: ["اسم الجهاز", "Hostname"], ipv4: ["IPv4", "IPv4"], ipv6: ["IPv6", "IPv6"] };
 
 function RescanButton({ asset }: { asset: AssetDetail }) {
   const qc = useQueryClient();
@@ -26,11 +27,11 @@ function RescanButton({ asset }: { asset: AssetDetail }) {
   });
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <select className={`${inputClass} w-auto`} value={chosen ?? ""} onChange={(e) => setProfileId(Number(e.target.value))} aria-label="ملف الفحص">
+      <select className={`${inputClass} w-auto`} value={chosen ?? ""} onChange={(e) => setProfileId(Number(e.target.value))} aria-label={t("ملف الفحص", "Scan profile")}>
         {profiles.data?.map((p) => <option key={p.id} value={p.id}>{p.name_ar}</option>)}
       </select>
-      <Button disabled={!chosen || run.isPending} onClick={() => run.mutate()}>فحص هذا الجهاز الآن</Button>
-      {run.data && <Link className="text-xs text-cyan-800 underline" to={`/scans/${run.data.id}`}>متابعة الفحص #{run.data.id}</Link>}
+      <Button disabled={!chosen || run.isPending} onClick={() => run.mutate()}>{t("فحص هذا الجهاز الآن", "Scan this device now")}</Button>
+      {run.data && <Link className="text-xs text-cyan-800 underline" to={`/scans/${run.data.id}`}>{t("متابعة الفحص", "Follow scan")} #{run.data.id}</Link>}
       {run.error && <span className="text-xs text-red-700">{errorMessage(run.error)}</span>}
     </div>
   );
@@ -50,12 +51,13 @@ function ScreenPreview({ asset }: { asset: AssetDetail }) {
   const [active, setActive] = useState<string | null>(asset.current_ip && webs[0] ? screenUrl(asset.current_ip, webs[0]) : null);
   if (!asset.current_ip) return null;
   return (
-    <Card title="معاينة الشاشة">
+    <Card title={t("معاينة الشاشة", "Screen preview")}>
       <p className="mb-2 text-xs text-slate-500">
-        عرض ما تبثّه هذه الشاشة من واجهتها المتاحة على الشبكة — دون تجاوز أي حماية. مناسب للشاشات واللوحات العامة التابعة للشبكة.
+        {t("عرض ما تبثّه هذه الشاشة من واجهتها المتاحة على الشبكة — دون تجاوز أي حماية. مناسب للشاشات واللوحات العامة التابعة للشبكة.",
+          "Shows what this screen broadcasts through its network-facing web interface — without bypassing any protection. Suitable for the organisation's public displays and signage.")}
       </p>
       {webs.length === 0 ? (
-        <p className="text-sm text-slate-500">لا توجد واجهة ويب مفتوحة على هذه الشاشة لعرض محتواها. إن كانت تعرض عبر HDMI/تطبيق فقط فلا يمكن التقاط صورتها عن بُعد.</p>
+        <p className="text-sm text-slate-500">{t("لا توجد واجهة ويب مفتوحة على هذه الشاشة لعرض محتواها. إن كانت تعرض عبر HDMI/تطبيق فقط فلا يمكن التقاط صورتها عن بُعد.", "This screen has no open web interface to display. If it shows content only over HDMI/an app, it cannot be captured remotely.")}</p>
       ) : (
         <>
           <div className="mb-2 flex flex-wrap gap-1.5">
@@ -68,13 +70,13 @@ function ScreenPreview({ asset }: { asset: AssetDetail }) {
                 </button>
               );
             })}
-            {active && <a href={active} target="_blank" rel="noreferrer" className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-cyan-800 hover:bg-cyan-50">↗ فتح في تبويب</a>}
+            {active && <a href={active} target="_blank" rel="noreferrer" className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-cyan-800 hover:bg-cyan-50">↗ {t("فتح في تبويب", "Open in a tab")}</a>}
           </div>
           {active && (
             <>
-              <iframe title="معاينة الشاشة" src={active} className="h-[460px] w-full rounded-lg border border-slate-200 bg-white"
+              <iframe title={t("معاينة الشاشة", "Screen preview")} src={active} className="h-[460px] w-full rounded-lg border border-slate-200 bg-white"
                 sandbox="allow-scripts allow-same-origin allow-forms" referrerPolicy="no-referrer" />
-              <p className="mt-1 text-[11px] text-slate-400">لو ظهرت المعاينة فارغة فالجهاز يمنع التضمين (X-Frame-Options)؛ استخدم «فتح في تبويب».</p>
+              <p className="mt-1 text-[11px] text-slate-400">{t("لو ظهرت المعاينة فارغة فالجهاز يمنع التضمين (X-Frame-Options)؛ استخدم «فتح في تبويب».", "If the preview is blank, the device forbids embedding (X-Frame-Options); use “Open in a tab”.")}</p>
             </>
           )}
         </>
@@ -94,13 +96,14 @@ function SharedFiles({ asset }: { asset: AssetDetail }) {
   const crumbs = loc ? loc.sub.split("\\").filter(Boolean) : [];
   const goUp = () => { if (loc) setLoc({ share: loc.share, sub: crumbs.slice(0, -1).join("\\") }); };
   return (
-    <Card title="الملفات المشتركة للعامة (SMB)">
+    <Card title={t("الملفات المشتركة للعامة (SMB)", "Public shared files (SMB)")}>
       <p className="mb-2 text-xs text-slate-500">
-        تصفّح قراءة فقط لما يشاركه الجهاز <b>بدون حساب</b>. لا يرسل راصد أي كلمة مرور؛ المشاركات المحميّة لا تظهر، ولا تُقرأ محتويات الملفات.
+        {t("تصفّح قراءة فقط لما يشاركه الجهاز بدون حساب. لا يرسل راصد أي كلمة مرور؛ المشاركات المحميّة لا تظهر، ولا تُقرأ محتويات الملفات.",
+          "Read-only browse of what the device shares without an account. RasedNet sends no password; protected shares are not shown, and file contents are never read.")}
       </p>
-      {!shares.data && <Button variant="secondary" disabled={shares.isFetching} onClick={() => shares.refetch()}>{shares.isFetching ? "جارٍ الفحص…" : "اعرض المشاركات العامة"}</Button>}
+      {!shares.data && <Button variant="secondary" disabled={shares.isFetching} onClick={() => shares.refetch()}>{shares.isFetching ? t("جارٍ الفحص…", "Scanning…") : t("اعرض المشاركات العامة", "List public shares")}</Button>}
       {shares.error && <div className="mt-2"><ErrorBox error={errorMessage(shares.error)} /></div>}
-      {shares.data && shares.data.shares.length === 0 && <p className="text-sm text-amber-700">لا توجد مشاركات متاحة بدون حساب على هذا الجهاز (كلها محميّة).</p>}
+      {shares.data && shares.data.shares.length === 0 && <p className="text-sm text-amber-700">{t("لا توجد مشاركات متاحة بدون حساب على هذا الجهاز (كلها محميّة).", "No shares are available without an account on this device (all protected).")}</p>}
       {shares.data && shares.data.shares.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {shares.data.shares.map((s) => (
@@ -116,11 +119,11 @@ function SharedFiles({ asset }: { asset: AssetDetail }) {
           <div className="mb-1 flex items-center gap-1 text-xs text-slate-600">
             <button type="button" className="text-cyan-800 underline" onClick={() => setLoc({ share: loc.share, sub: "" })}>{loc.share}</button>
             {crumbs.map((c, i) => <span key={i}>\ <button type="button" className="text-cyan-800 underline" onClick={() => setLoc({ share: loc.share, sub: crumbs.slice(0, i + 1).join("\\") })}>{c}</button></span>)}
-            {crumbs.length > 0 && <button type="button" className="ms-2 text-slate-500 underline" onClick={goUp}>▲ للأعلى</button>}
+            {crumbs.length > 0 && <button type="button" className="ms-2 text-slate-500 underline" onClick={goUp}>▲ {t("للأعلى", "Up")}</button>}
           </div>
           {list.isLoading ? <Loading /> : list.error ? <ErrorBox error={errorMessage(list.error)} /> : (
             <div className="max-h-80 overflow-auto">
-              {list.data!.entries.length === 0 ? <p className="p-2 text-sm text-slate-400">مجلد فارغ.</p> : (
+              {list.data!.entries.length === 0 ? <p className="p-2 text-sm text-slate-400">{t("مجلد فارغ.", "Empty folder.")}</p> : (
                 <table className="w-full text-sm">
                   <tbody>
                     {list.data!.entries.map((e) => (
@@ -130,7 +133,7 @@ function SharedFiles({ asset }: { asset: AssetDetail }) {
                             <button type="button" className="text-cyan-800 hover:underline" onClick={() => setLoc({ share: loc.share, sub: (loc.sub ? loc.sub + "\\" : "") + e.name })}>📁 {e.name}</button>
                           ) : <span className="text-slate-700">📄 {e.name}</span>}
                         </td>
-                        <td className="px-2 py-1 text-end text-xs text-slate-500">{e.is_dir ? "" : `${Math.max(1, Math.round(e.size / 1024))} ك.ب`}</td>
+                        <td className="px-2 py-1 text-end text-xs text-slate-500">{e.is_dir ? "" : `${Math.max(1, Math.round(e.size / 1024))} ${t("ك.ب", "KB")}`}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -153,16 +156,17 @@ function WebFingerprint({ asset }: { asset: AssetDetail }) {
     onSuccess: (r) => setRes(r.services),
   });
   return (
-    <Card title="بصمة الويب">
+    <Card title={t("بصمة الويب", "Web fingerprint")}>
       <p className="mb-2 text-xs text-slate-500">
-        يلتقط هوية واجهات الويب على الجهاز: ترويسة الخادم، عنوان الصفحة، وبصمة الأيقونة (favicon hash بأسلوب Shodan) — للتعرّف على لوحات الإدارة والبحث عنها. قراءة فقط.
+        {t("يلتقط هوية واجهات الويب على الجهاز: ترويسة الخادم، عنوان الصفحة، وبصمة الأيقونة (favicon hash بأسلوب Shodan) — للتعرّف على لوحات الإدارة والبحث عنها. قراءة فقط.",
+          "Captures the identity of the device's web interfaces: the Server header, page title and favicon hash (Shodan-style) — to recognise and search for admin panels. Read-only.")}
       </p>
-      <Button disabled={run.isPending} onClick={() => run.mutate()}>{run.isPending ? "جارٍ…" : "التقط بصمة الويب"}</Button>
+      <Button disabled={run.isPending} onClick={() => run.mutate()}>{run.isPending ? t("جارٍ…", "Working…") : t("التقط بصمة الويب", "Capture web fingerprint")}</Button>
       {run.error && <div className="mt-2"><ErrorBox error={errorMessage(run.error)} /></div>}
       {res && (
         <div className="mt-2 overflow-auto">
           <table className="w-full text-sm">
-            <thead><tr className="border-b text-slate-500"><th className="p-2">المنفذ</th><th className="p-2 text-start">الخادم</th><th className="p-2 text-start">العنوان</th><th className="p-2 text-start">favicon</th></tr></thead>
+            <thead><tr className="border-b text-slate-500"><th className="p-2">{t("المنفذ", "Port")}</th><th className="p-2 text-start">{t("الخادم", "Server")}</th><th className="p-2 text-start">{t("العنوان", "Title")}</th><th className="p-2 text-start">favicon</th></tr></thead>
             <tbody>
               {res.map((s) => (
                 <tr key={s.port} className="border-b border-slate-100">
@@ -189,22 +193,22 @@ function UdpScan({ asset }: { asset: AssetDetail }) {
     onSuccess: (r) => { setRes(r); void qc.invalidateQueries({ queryKey: ["asset", asset.id] }); },
   });
   const tone = (s: string) => (s === "open" ? "green" : s === "closed" ? "slate" : "amber");
-  const ar = (s: string) => (s === "open" ? "مفتوح" : s === "closed" ? "مغلق" : "صامت/مُرشَّح");
+  const stateLabel = (s: string) => (s === "open" ? t("مفتوح", "Open") : s === "closed" ? t("مغلق", "Closed") : t("صامت/مُرشَّح", "Silent/filtered"));
   return (
-    <Card title="فحص منافذ UDP">
+    <Card title={t("فحص منافذ UDP", "UDP port scan")}>
       <p className="mb-2 text-xs text-slate-500">
-        فحص نشط للمنافذ الشائعة (DNS، NTP، SNMP، NetBIOS، SSDP، mDNS…) بإرسال طلب خاص بكل بروتوكول.
-        المنفذ يُعدّ مفتوحاً فقط عند وصول رد — لا ادّعاء كاذب. يتطلب أن يكون الجهاز داخل نطاق معتمد.
+        {t("فحص نشط للمنافذ الشائعة (DNS، NTP، SNMP، NetBIOS، SSDP، mDNS…) بإرسال طلب خاص بكل بروتوكول. المنفذ يُعدّ مفتوحاً فقط عند وصول رد — لا ادّعاء كاذب. يتطلب أن يكون الجهاز داخل نطاق معتمد.",
+          "Active probing of common ports (DNS, NTP, SNMP, NetBIOS, SSDP, mDNS…) by sending a protocol-specific request. A port counts as open only when a reply arrives — no false positives. Requires the device to be inside an approved scope.")}
       </p>
-      <Button disabled={run.isPending} onClick={() => run.mutate()}>{run.isPending ? "جارٍ الفحص…" : "افحص منافذ UDP"}</Button>
+      <Button disabled={run.isPending} onClick={() => run.mutate()}>{run.isPending ? t("جارٍ الفحص…", "Scanning…") : t("افحص منافذ UDP", "Scan UDP ports")}</Button>
       {run.error && <div className="mt-2"><ErrorBox error={errorMessage(run.error)} /></div>}
       {res && (
         <div className="mt-2">
-          <div className="mb-1 text-sm text-slate-600">منافذ UDP مفتوحة: {res.open}</div>
+          <div className="mb-1 text-sm text-slate-600">{t("منافذ UDP مفتوحة:", "Open UDP ports:")} {res.open}</div>
           <div className="flex flex-wrap gap-1.5">
             {res.results.map((r) => (
               <span key={r.port} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-0.5 text-xs">
-                <Ltr className="font-mono">{r.port}</Ltr> {r.service} <Badge tone={tone(r.state)}>{ar(r.state)}</Badge>
+                <Ltr className="font-mono">{r.port}</Ltr> {r.service} <Badge tone={tone(r.state)}>{stateLabel(r.state)}</Badge>
               </span>
             ))}
           </div>
@@ -225,16 +229,16 @@ function Console({ asset, credentials }: { asset: AssetDetail; credentials: Cred
   });
   return (
     <div className="space-y-2">
-      <p className="text-xs text-slate-500">ينفذ الأمر على الجهاز بالحساب المختار (WinRM: PowerShell، SSH: Shell). كل أمر يُسجّل في سجل التدقيق مع مخرجاته.</p>
-      <select className={`${inputClass} w-auto`} value={credId} onChange={(e) => setCredId(e.target.value ? Number(e.target.value) : "")} aria-label="حساب الدخول">
-        <option value="">اختر حساب الدخول…</option>
+      <p className="text-xs text-slate-500">{t("ينفذ الأمر على الجهاز بالحساب المختار (WinRM: PowerShell، SSH: Shell). كل أمر يُسجّل في سجل التدقيق مع مخرجاته.", "Runs the command on the device with the chosen account (WinRM: PowerShell, SSH: shell). Every command and its output is recorded in the audit log.")}</p>
+      <select className={`${inputClass} w-auto`} value={credId} onChange={(e) => setCredId(e.target.value ? Number(e.target.value) : "")} aria-label={t("حساب الدخول", "Credential")}>
+        <option value="">{t("اختر حساب الدخول…", "Choose a credential…")}</option>
         {credentials.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.kind === "ssh" ? "SSH" : "WinRM"} ({c.username})</option>)}
       </select>
       <textarea dir="ltr" className={`${inputClass} ltr min-h-24`} value={command} onChange={(e) => setCommand(e.target.value)}
-        placeholder="Get-Service | Where-Object Status -eq Running   |   uptime; df -h" aria-label="الأمر" />
+        placeholder="Get-Service | Where-Object Status -eq Running   |   uptime; df -h" aria-label={t("الأمر", "Command")} />
       <Button variant="danger" disabled={!credId || !command.trim() || run.isPending}
-        onClick={() => window.confirm("تنفيذ الأمر على " + (asset.current_ip ?? "") + "؟") && run.mutate()}>
-        {run.isPending ? "جارٍ التنفيذ…" : "تنفيذ على الجهاز"}
+        onClick={() => window.confirm((getLang() === "en" ? "Run the command on " : "تنفيذ الأمر على ") + (asset.current_ip ?? "") + "؟") && run.mutate()}>
+        {run.isPending ? t("جارٍ التنفيذ…", "Running…") : t("تنفيذ على الجهاز", "Run on the device")}
       </Button>
       {run.error && <ErrorBox error={errorMessage(run.error)} />}
       {result && <ExecutionView e={result} />}
@@ -246,11 +250,11 @@ function ExecutionView({ e }: { e: Execution }) {
   return (
     <div className="rounded-lg border border-slate-200">
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50 px-2 py-1 text-xs">
-        <Badge tone={e.status === "ok" && !e.had_errors ? "green" : e.status === "ok" ? "amber" : "red"}>{e.status === "error" ? "فشل" : e.had_errors ? "مع أخطاء" : "نجاح"}</Badge>
+        <Badge tone={e.status === "ok" && !e.had_errors ? "green" : e.status === "ok" ? "amber" : "red"}>{e.status === "error" ? t("فشل", "Failed") : e.had_errors ? t("مع أخطاء", "With errors") : t("نجاح", "Success")}</Badge>
         <span>{e.label_ar}</span><span className="text-slate-400">{formatDate(e.started_at)}</span>
       </div>
       <pre dir="ltr" className="ltr border-b border-slate-100 bg-slate-900 px-2 py-1 text-[11px] text-emerald-100">{e.command}</pre>
-      <pre dir="ltr" className="ltr max-h-64 overflow-auto whitespace-pre-wrap break-all px-2 py-1 text-[11px]">{e.output || "(لا توجد مخرجات)"}</pre>
+      <pre dir="ltr" className="ltr max-h-64 overflow-auto whitespace-pre-wrap break-all px-2 py-1 text-[11px]">{e.output || t("(لا توجد مخرجات)", "(no output)")}</pre>
     </div>
   );
 }
@@ -266,16 +270,16 @@ function EditAsset({ asset }: { asset: AssetDetail }) {
   });
   return (
     <div className="grid gap-3 md:grid-cols-3">
-      <Field label="الاسم المعتمد"><input className={inputClass} value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={128} /></Field>
-      <Field label="أهمية الجهاز">
+      <Field label={t("الاسم المعتمد", "Display name")}><input className={inputClass} value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={128} /></Field>
+      <Field label={t("أهمية الجهاز", "Device criticality")}>
         <select className={inputClass} value={criticality} onChange={(e) => setCriticality(e.target.value as AssetDetail["criticality"])}>
-          {Object.entries(CRITICALITY).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          {Object.keys(CRITICALITY).map((k) => <option key={k} value={k}>{label(CRITICALITY, k)}</option>)}
         </select>
       </Field>
-      <Field label="ملاحظات"><input className={inputClass} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={5000} /></Field>
+      <Field label={t("ملاحظات", "Notes")}><input className={inputClass} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={5000} /></Field>
       <div className="md:col-span-3 flex items-center gap-3">
-        <Button onClick={() => save.mutate()} disabled={save.isPending}>حفظ</Button>
-        {save.isSuccess && <span className="text-sm text-emerald-700">تم الحفظ</span>}
+        <Button onClick={() => save.mutate()} disabled={save.isPending}>{t("حفظ", "Save")}</Button>
+        {save.isSuccess && <span className="text-sm text-emerald-700">{t("تم الحفظ", "Saved")}</span>}
         {save.error && <span className="text-sm text-red-700">{errorMessage(save.error)}</span>}
       </div>
     </div>
@@ -295,64 +299,66 @@ export function AssetDetailPage() {
   const credentials = useQuery({ queryKey: ["credentials"], queryFn: () => api<Credential[]>("/api/credentials"), enabled: can("remote:verify") });
   const executions = useQuery({ queryKey: ["executions", assetId], queryFn: () => api<Execution[]>(`/api/assets/${assetId}/executions`), enabled: can("remote:verify") });
   if (isLoading) return <Loading />;
-  if (error || !a) return <ErrorBox error={error ?? "الجهاز غير موجود"} />;
+  if (error || !a) return <ErrorBox error={error ?? t("الجهاز غير موجود", "Device not found")} />;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Link to="/assets" className="text-sm text-cyan-800 underline">الأجهزة المتصلة</Link>
+        <Link to="/assets" className="text-sm text-cyan-800 underline">{t("الأجهزة المتصلة", "Devices")}</Link>
         <h1 className="text-2xl font-bold">{a.display_name ?? a.hostname ?? <Ltr>{a.current_ip}</Ltr>}</h1>
         <Badge tone={STATUS_TONE[a.status]}>{label(ASSET_STATUS, a.status)}</Badge>
-        {a.is_gateway && <Badge tone="amber">بوابة الشبكة</Badge>}
+        {a.is_gateway && <Badge tone="amber">{t("بوابة الشبكة", "Network gateway")}</Badge>}
         {a.model && <span className="text-sm text-slate-500">{a.model}</span>}
         {can("scan:run") && <div className="ms-auto"><RescanButton asset={a} /></div>}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card title="بيانات الجهاز">
+        <Card title={t("بيانات الجهاز", "Device details")}>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-            <dt className="text-slate-500">عنوان IP الحالي</dt><dd><Ltr>{a.current_ip ?? "—"}</Ltr></dd>
-            <dt className="text-slate-500">اسم الجهاز (DNS)</dt><dd>{a.hostname ? <Ltr>{a.hostname}</Ltr> : "غير متوفر"}</dd>
-            <dt className="text-slate-500">عنوان MAC</dt>
-            <dd>{a.mac ? <Ltr>{a.mac}</Ltr> : "غير مرئي (الجهاز خارج الشريحة المحلية لخادم الفحص أو لم يُرصد)"}{a.mac_randomized && <span className="ms-2"><Badge tone="purple">عنوان عشوائي محتمل</Badge></span>}</dd>
-            <dt className="text-slate-500">الشركة المصنعة</dt><dd>{a.vendor ?? "غير محددة"}</dd>
-            {a.model && <><dt className="text-slate-500">الطراز (UPnP)</dt><dd>{a.model}</dd></>}
-            {a.upnp?.friendly_name && <><dt className="text-slate-500">الاسم المعلن</dt><dd>{a.upnp.friendly_name}</dd></>}
-            {a.netbios_name && <><dt className="text-slate-500">اسم NetBIOS</dt><dd><Ltr>{a.netbios_name.toUpperCase()}</Ltr></dd></>}
-            {a.workgroup && <><dt className="text-slate-500">مجموعة العمل / المجال</dt><dd><Ltr>{a.workgroup.toUpperCase()}</Ltr></dd></>}
-            {a.upnp?.server && <><dt className="text-slate-500">خادم UPnP</dt><dd><Ltr className="text-xs">{a.upnp.server}</Ltr></dd></>}
-            <dt className="text-slate-500">طرق الاكتشاف</dt><dd>{a.discovery_methods.map((m) => label(METHODS, m)).join("، ") || "—"}</dd>
-            <dt className="text-slate-500">أهمية الجهاز</dt><dd>{label(CRITICALITY, a.criticality)}</dd>
-            <dt className="text-slate-500">أول ظهور</dt><dd>{formatDate(a.first_seen)}</dd>
-            <dt className="text-slate-500">آخر ظهور</dt><dd>{formatDate(a.last_seen)}</dd>
+            <dt className="text-slate-500">{t("عنوان IP الحالي", "Current IP address")}</dt><dd><Ltr>{a.current_ip ?? "—"}</Ltr></dd>
+            <dt className="text-slate-500">{t("اسم الجهاز (DNS)", "Hostname (DNS)")}</dt><dd>{a.hostname ? <Ltr>{a.hostname}</Ltr> : t("غير متوفر", "Not available")}</dd>
+            <dt className="text-slate-500">{t("عنوان MAC", "MAC address")}</dt>
+            <dd>{a.mac ? <Ltr>{a.mac}</Ltr> : t("غير مرئي (الجهاز خارج الشريحة المحلية لخادم الفحص أو لم يُرصد)", "Not visible (device is outside the scanner's local segment or was not observed)")}{a.mac_randomized && <span className="ms-2"><Badge tone="purple">{t("عنوان عشوائي محتمل", "Possibly randomized")}</Badge></span>}</dd>
+            <dt className="text-slate-500">{t("الشركة المصنعة", "Vendor")}</dt><dd>{a.vendor ?? t("غير محددة", "Unknown")}</dd>
+            {a.model && <><dt className="text-slate-500">{t("الطراز (UPnP)", "Model (UPnP)")}</dt><dd>{a.model}</dd></>}
+            {a.upnp?.friendly_name && <><dt className="text-slate-500">{t("الاسم المعلن", "Advertised name")}</dt><dd>{a.upnp.friendly_name}</dd></>}
+            {a.netbios_name && <><dt className="text-slate-500">{t("اسم NetBIOS", "NetBIOS name")}</dt><dd><Ltr>{a.netbios_name.toUpperCase()}</Ltr></dd></>}
+            {a.workgroup && <><dt className="text-slate-500">{t("مجموعة العمل / المجال", "Workgroup / domain")}</dt><dd><Ltr>{a.workgroup.toUpperCase()}</Ltr></dd></>}
+            {a.upnp?.server && <><dt className="text-slate-500">{t("خادم UPnP", "UPnP server")}</dt><dd><Ltr className="text-xs">{a.upnp.server}</Ltr></dd></>}
+            <dt className="text-slate-500">{t("طرق الاكتشاف", "Discovery methods")}</dt><dd>{a.discovery_methods.map((m) => label(METHODS, m)).join(t("، ", ", ")) || "—"}</dd>
+            <dt className="text-slate-500">{t("أهمية الجهاز", "Device criticality")}</dt><dd>{label(CRITICALITY, a.criticality)}</dd>
+            <dt className="text-slate-500">{t("أول ظهور", "First seen")}</dt><dd>{formatDate(a.first_seen)}</dd>
+            <dt className="text-slate-500">{t("آخر ظهور", "Last seen")}</dt><dd>{formatDate(a.last_seen)}</dd>
           </dl>
         </Card>
 
-        <Card title="تصنيف الجهاز والأدلة">
+        <Card title={t("تصنيف الجهاز والأدلة", "Device classification & evidence")}>
           <p className="font-semibold">{deviceTypeSentence(a.device_type, a.device_type_confidence)}</p>
           <p className="mt-1 text-sm">
-            نظام التشغيل: {a.os_family === "unknown" ? "غير مؤكد — يتطلب مراجعة" : `${label(OS_FAMILIES, a.os_family)} — الثقة ${percent(a.os_confidence)}`}
+            {t("نظام التشغيل:", "Operating system:")} {a.os_family === "unknown"
+              ? t("غير مؤكد — يتطلب مراجعة", "unconfirmed — needs review")
+              : (getLang() === "en" ? `${label(OS_FAMILIES, a.os_family)} — confidence ${percent(a.os_confidence)}` : `${label(OS_FAMILIES, a.os_family)} — الثقة ${percent(a.os_confidence)}`)}
           </p>
-          <p className="mt-2 text-xs text-slate-500">التصنيف استنتاج قائم على الأدلة أدناه وليس تحققاً مؤكداً. لا يُستنتج طراز الجهاز دون دليل موثوق.</p>
+          <p className="mt-2 text-xs text-slate-500">{t("التصنيف استنتاج قائم على الأدلة أدناه وليس تحققاً مؤكداً. لا يُستنتج طراز الجهاز دون دليل موثوق.", "The classification is inferred from the evidence below, not a confirmed verification. A device model is never inferred without reliable evidence.")}</p>
           {a.fingerprint && a.fingerprint.evidence.length > 0 ? (
             <ul className="mt-3 space-y-1 text-sm">
               {a.fingerprint.evidence.map((e, i) => (
                 <li key={i} className="rounded border border-slate-100 bg-slate-50 px-2 py-1">
-                  {e.detail_ar} <span className="text-xs text-slate-500">(وزن الدليل {percent(e.weight)})</span>
+                  {e.detail_ar} <span className="text-xs text-slate-500">({t("وزن الدليل", "evidence weight")} {percent(e.weight)})</span>
                 </li>
               ))}
             </ul>
-          ) : <p className="mt-3 text-sm text-slate-500">لا توجد أدلة كافية للتصنيف.</p>}
+          ) : <p className="mt-3 text-sm text-slate-500">{t("لا توجد أدلة كافية للتصنيف.", "Not enough evidence to classify.")}</p>}
         </Card>
       </div>
 
-      <Card title="الخدمات والمنافذ">
-        {a.services.length === 0 ? <p className="text-sm text-slate-500">لم تُرصد خدمات مفتوحة.</p> : (
+      <Card title={t("الخدمات والمنافذ", "Services & ports")}>
+        {a.services.length === 0 ? <p className="text-sm text-slate-500">{t("لم تُرصد خدمات مفتوحة.", "No open services were observed.")}</p> : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead><tr className="border-b bg-slate-50">
-                <th className="px-3 py-2 text-start">المنفذ</th><th className="px-3 py-2 text-start">الخدمة</th><th className="px-3 py-2 text-start">المنتج والإصدار</th>
-                <th className="px-3 py-2 text-start">طريقة التعرف</th><th className="px-3 py-2 text-start">الفئة</th><th className="px-3 py-2 text-start">الحالة</th><th className="px-3 py-2 text-start">ملاحظة أمنية</th>
+                <th className="px-3 py-2 text-start">{t("المنفذ", "Port")}</th><th className="px-3 py-2 text-start">{t("الخدمة", "Service")}</th><th className="px-3 py-2 text-start">{t("المنتج والإصدار", "Product & version")}</th>
+                <th className="px-3 py-2 text-start">{t("طريقة التعرف", "Identification")}</th><th className="px-3 py-2 text-start">{t("الفئة", "Category")}</th><th className="px-3 py-2 text-start">{t("الحالة", "State")}</th><th className="px-3 py-2 text-start">{t("ملاحظة أمنية", "Security note")}</th>
               </tr></thead>
               <tbody>
                 {a.services.map((s) => (
@@ -364,19 +370,19 @@ export function AssetDetailPage() {
                       {s.product ? <Ltr>{`${s.product}${s.version ? " " + s.version : ""}`}</Ltr> : "—"}
                       {s.banner && <div className="mt-1 max-w-xs truncate text-xs text-slate-500" title={s.banner}><Ltr>{s.banner}</Ltr></div>}
                       {s.tls && typeof s.tls === "object" && "certificate" in s.tls && (
-                        <div className="mt-1 text-xs text-slate-500">شهادة TLS: <Ltr>{String((s.tls.certificate as Record<string, unknown>).subject_cn ?? "—")}</Ltr></div>
+                        <div className="mt-1 text-xs text-slate-500">{t("شهادة TLS:", "TLS certificate:")} <Ltr>{String((s.tls.certificate as Record<string, unknown>).subject_cn ?? "—")}</Ltr></div>
                       )}
                     </td>
                     <td className="px-3 py-2">{label(ID_METHOD, s.identification_method)} ({percent(s.identification_confidence)})</td>
                     <td className="px-3 py-2">{label(EXPOSURE, s.exposure_category)}</td>
-                    <td className="px-3 py-2"><Badge tone={s.state === "open" ? "orange" : "slate"}>{s.state === "open" ? "مفتوح" : "مغلق"}</Badge></td>
+                    <td className="px-3 py-2"><Badge tone={s.state === "open" ? "orange" : "slate"}>{s.state === "open" ? t("مفتوح", "Open") : t("مغلق", "Closed")}</Badge></td>
                     <td className="px-3 py-2 text-xs text-slate-600">
                       {s.exposure_note_ar ?? "—"}
                       {s.guidance && (
                         <div className="mt-2">
                           <Button variant="ghost" className="px-2 py-1 text-xs" aria-expanded={!!open[s.id]}
                             onClick={() => setOpen({ ...open, [s.id]: !open[s.id] })}>
-                            {open[s.id] ? "إخفاء الخطوات" : "كيف أتحقق منها وأقفلها"}
+                            {open[s.id] ? t("إخفاء الخطوات", "Hide steps") : t("كيف أتحقق منها وأقفلها", "How to verify & close it")}
                           </Button>
                         </div>
                       )}
@@ -394,34 +400,34 @@ export function AssetDetailPage() {
                 ))}
               </tbody>
             </table>
-            <p className="mt-2 text-xs text-slate-500">وجود منفذ مفتوح ليس دليلاً على وجود ثغرة؛ الملاحظات أعلاه توصيات للمراجعة.</p>
+            <p className="mt-2 text-xs text-slate-500">{t("وجود منفذ مفتوح ليس دليلاً على وجود ثغرة؛ الملاحظات أعلاه توصيات للمراجعة.", "An open port is not proof of a vulnerability; the notes above are recommendations for review.")}</p>
           </div>
         )}
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card title="المعرفات المرصودة">
+        <Card title={t("المعرفات المرصودة", "Observed identifiers")}>
           <ul className="space-y-1 text-sm">
             {a.identifiers.map((i) => (
-              <li key={`${i.kind}-${i.value}`}>{label(ID_KIND, i.kind)}: <Ltr>{i.value}</Ltr> <span className="text-xs text-slate-500">— آخر ظهور {formatDate(i.last_seen)}</span></li>
+              <li key={`${i.kind}-${i.value}`}>{label(ID_KIND, i.kind)}: <Ltr>{i.value}</Ltr> <span className="text-xs text-slate-500">— {t("آخر ظهور", "last seen")} {formatDate(i.last_seen)}</span></li>
             ))}
           </ul>
         </Card>
-        <Card title="سجل عناوين IP">
+        <Card title={t("سجل عناوين IP", "IP address history")}>
           <ul className="space-y-1 text-sm">
             {a.ip_history.map((o) => (
-              <li key={o.ip}><Ltr>{o.ip}</Ltr> <span className="text-xs text-slate-500">— من {formatDate(o.first_seen)} إلى {formatDate(o.last_seen)} ({o.sightings} مرة)</span></li>
+              <li key={o.ip}><Ltr>{o.ip}</Ltr> <span className="text-xs text-slate-500">— {getLang() === "en" ? `from ${formatDate(o.first_seen)} to ${formatDate(o.last_seen)} (${o.sightings}×)` : `من ${formatDate(o.first_seen)} إلى ${formatDate(o.last_seen)} (${o.sightings} مرة)`}</span></li>
             ))}
           </ul>
         </Card>
-        <Card title="التنبيهات المفتوحة">
-          {a.alerts.length === 0 ? <p className="text-sm text-slate-500">لا توجد.</p> : (
+        <Card title={t("التنبيهات المفتوحة", "Open alerts")}>
+          {a.alerts.length === 0 ? <p className="text-sm text-slate-500">{t("لا توجد.", "None.")}</p> : (
             <ul className="space-y-2 text-sm">{a.alerts.map((al) => (
               <li key={al.id}><Badge tone={SEVERITY_TONE[al.severity]}>{label(SEVERITY, al.severity)}</Badge> <span className="font-medium">{al.title_ar}</span><div className="text-xs text-slate-600">{al.message_ar}</div></li>
             ))}</ul>
           )}
         </Card>
-        <Card title="سجل تغييرات الجهاز">
+        <Card title={t("سجل تغييرات الجهاز", "Device change log")}>
           <ul className="space-y-1 text-sm">{a.events.map((e) => (
             <li key={e.id}><Badge>{label(EVENT_KINDS, e.kind)}</Badge> {e.message_ar} <span className="text-xs text-slate-500">— {formatDate(e.created_at)}</span></li>
           ))}</ul>
@@ -436,14 +442,14 @@ export function AssetDetailPage() {
         <RouterControl assetId={a.id} credentials={credentials.data ?? []} />
       )}
       {can("remote:change") && (
-        <Card title="وحدة التحكم بالجهاز (أوامر مخصصة)"><Console asset={a} credentials={credentials.data ?? []} /></Card>
+        <Card title={t("وحدة التحكم بالجهاز (أوامر مخصصة)", "Device console (custom commands)")}><Console asset={a} credentials={credentials.data ?? []} /></Card>
       )}
       {can("remote:verify") && (executions.data?.length ?? 0) > 0 && (
-        <Card title="سجل الأوامر المنفذة على هذا الجهاز">
+        <Card title={t("سجل الأوامر المنفذة على هذا الجهاز", "Commands run on this device")}>
           <div className="space-y-2">{executions.data?.slice(0, 10).map((e) => <ExecutionView key={e.id} e={e} />)}</div>
         </Card>
       )}
-      {can("asset:write") && <Card title="تعديل بيانات الجهاز"><EditAsset key={a.id} asset={a} /></Card>}
+      {can("asset:write") && <Card title={t("تعديل بيانات الجهاز", "Edit device details")}><EditAsset key={a.id} asset={a} /></Card>}
     </div>
   );
 }

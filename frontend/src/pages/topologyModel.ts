@@ -1,6 +1,7 @@
 /** Network-map model: element building, colouring, labels, filters, focus and saved layouts.
  *  Pure functions over plain data or a Cytoscape Core, so they are testable headless. */
 import type cytoscape from "cytoscape";
+import { getLang, t } from "../i18n";
 import type { TopoNode, Topology } from "../types";
 
 export type ColorMode = "type" | "status" | "risk" | "os";
@@ -18,8 +19,14 @@ export const OS_COLORS: Record<string, string> = {
 };
 export const RISK_COLORS = { alert: "#dc2626", exposed: "#f97316", ok: "#16a34a" } as const;
 
-export const COLOR_MODES: Record<ColorMode, string> = { type: "حسب نوع الجهاز", status: "حسب الحالة", risk: "حسب الخطورة", os: "حسب نظام التشغيل" };
-export const LABEL_MODES: Record<LabelMode, string> = { both: "الاسم والعنوان", name: "الاسم فقط", ip: "العنوان فقط", none: "بدون تسميات" };
+export const colorModes = (): Record<ColorMode, string> => ({
+  type: t("حسب نوع الجهاز", "By device type"), status: t("حسب الحالة", "By status"),
+  risk: t("حسب الخطورة", "By risk"), os: t("حسب نظام التشغيل", "By operating system"),
+});
+export const labelModes = (): Record<LabelMode, string> => ({
+  both: t("الاسم والعنوان", "Name & address"), name: t("الاسم فقط", "Name only"),
+  ip: t("العنوان فقط", "Address only"), none: t("بدون تسميات", "No labels"),
+});
 
 const INFRA_TYPES = new Set(["router", "access_point", "switch", "network_device"]);
 
@@ -36,7 +43,7 @@ export function colorFor(node: Pick<TopoNode, "device_type" | "status" | "os_fam
 }
 
 export function labelFor(node: TopoNode, mode: LabelMode): string {
-  if (node.type === "network") return `${node.cidr ?? node.label}${node.devices ? `\n${node.devices} جهاز` : ""}`;
+  if (node.type === "network") return `${node.cidr ?? node.label}${node.devices ? `\n${node.devices} ${getLang() === "en" ? "devices" : "جهاز"}` : ""}`;
   if (node.type === "scanner") return mode === "none" ? "" : node.label;
   const name = node.label && node.label !== node.ip ? node.label : "";
   switch (mode) {
@@ -139,7 +146,7 @@ export function clearHighlight(cy: cytoscape.Core): void {
   cy.elements().removeClass("faded onpath match focus");
 }
 
-/** Highlight the shortest path from the RASED server to the given element. Returns hop count or -1. */
+/** Highlight the shortest path from the RasedNet server to the given element. Returns hop count or -1. */
 export function highlightPath(cy: cytoscape.Core, targetId: string): number {
   clearHighlight(cy);
   const root = cy.getElementById("scanner");
@@ -191,7 +198,7 @@ export function searchNodes(cy: cytoscape.Core, term: string): cytoscape.NodeCol
 // --- saved layouts ---------------------------------------------------------------------------
 
 export type Positions = Record<string, { x: number; y: number }>;
-const STORAGE_KEY = "rased.topology.positions.v1";
+const STORAGE_KEY = "rasednet.topology.positions.v1";
 
 export function loadPositions(storage: Pick<Storage, "getItem"> | null = safeStorage()): Positions {
   try {

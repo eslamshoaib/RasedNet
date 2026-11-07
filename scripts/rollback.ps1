@@ -5,9 +5,9 @@
 #>
 param([Parameter(Mandatory = $true)][string]$Snapshot, [Parameter(Mandatory = $true)][string]$BackupFile, [string]$Wheelhouse, [string]$PgBin)
 . "$PSScriptRoot\common.ps1"
-if (-not (Test-Path (Join-Path $Snapshot 'rased'))) { throw "اللقطة غير صالحة: $Snapshot" }
-Remove-Item -Recurse -Force (Join-Path $BackendDir 'rased')
-Copy-Item -Recurse (Join-Path $Snapshot 'rased') $BackendDir
+if (-not (Test-Path (Join-Path $Snapshot 'rasednet'))) { throw "اللقطة غير صالحة: $Snapshot" }
+Remove-Item -Recurse -Force (Join-Path $BackendDir 'rasednet')
+Copy-Item -Recurse (Join-Path $Snapshot 'rasednet') $BackendDir
 Copy-Item -Force (Join-Path $Snapshot 'requirements.lock') $BackendDir
 if (Test-Path (Join-Path $Snapshot 'dist')) {
     Remove-Item -Recurse -Force (Join-Path $RasedRoot 'frontend\dist') -ErrorAction SilentlyContinue

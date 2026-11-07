@@ -3,17 +3,17 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "rased"
+name = "rasednet"
 version = "0.15.0"
-description = "RASED — offline, Arabic-first network discovery and security assessment platform"
+description = "RasedNet — offline, Arabic-first network discovery and security assessment platform"
 requires-python = ">=3.12"
 # Exact versions verified by the test-suite live in requirements.lock (pinned, no hashes yet).
 
 [project.scripts]
-rased = "rased.cli:main"
+rasednet = "rasednet.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["rased*"]
+include = ["rasednet*"]
 
 [tool.setuptools.package-data]
-"rased.migrations" = ["script.py.mako", "versions/*.py"]
+"rasednet.migrations" = ["script.py.mako", "versions/*.py"]

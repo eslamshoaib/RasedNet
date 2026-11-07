@@ -16,13 +16,13 @@ if ($actual -ne $Sha256.ToUpper()) { throw 'بصمة حزمة التحديث ل�
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $snapshot = Join-Path $RasedRoot "releases\pre-upgrade-$stamp"
 New-Item -ItemType Directory -Force $snapshot | Out-Null
-Copy-Item -Recurse (Join-Path $RasedRoot 'backend\rased'), (Join-Path $RasedRoot 'backend\requirements.lock') -Destination $snapshot
+Copy-Item -Recurse (Join-Path $RasedRoot 'backend\rasednet'), (Join-Path $RasedRoot 'backend\requirements.lock') -Destination $snapshot
 if (Test-Path (Join-Path $RasedRoot 'frontend\dist')) { Copy-Item -Recurse (Join-Path $RasedRoot 'frontend\dist') (Join-Path $snapshot 'dist') }
 Write-Host "لقطة الإصدار الحالي: $snapshot"
 
-$staging = Join-Path ([IO.Path]::GetTempPath()) "rased-upgrade-$stamp"
+$staging = Join-Path ([IO.Path]::GetTempPath()) "rasednet-upgrade-$stamp"
 Expand-Archive -LiteralPath $Package -DestinationPath $staging
-Copy-Item -Recurse -Force (Join-Path $staging 'backend\rased') (Join-Path $RasedRoot 'backend')
+Copy-Item -Recurse -Force (Join-Path $staging 'backend\rasednet') (Join-Path $RasedRoot 'backend')
 Copy-Item -Force (Join-Path $staging 'backend\requirements.lock') (Join-Path $RasedRoot 'backend')
 if (Test-Path (Join-Path $staging 'frontend\dist')) {
     Remove-Item -Recurse -Force (Join-Path $RasedRoot 'frontend\dist') -ErrorAction SilentlyContinue

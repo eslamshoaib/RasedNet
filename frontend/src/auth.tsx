@@ -7,6 +7,7 @@ interface AuthState {
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refresh: () => Promise<void>;
   can: (permission: string) => boolean;
 }
 
@@ -41,6 +42,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [apply],
   );
 
+  const refresh = useCallback(async () => {
+    apply(await api<Me>("/api/auth/me"));
+  }, [apply]);
+
   const logout = useCallback(async () => {
     try {
       await api<void>("/api/auth/logout", { method: "POST" });
@@ -51,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const can = useCallback((permission: string) => !!me?.permissions.includes(permission), [me]);
 
-  return <AuthContext.Provider value={{ me, loading, login, logout, can }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ me, loading, login, logout, refresh, can }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthState {

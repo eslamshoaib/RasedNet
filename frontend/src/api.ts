@@ -1,4 +1,5 @@
 /** Minimal same-origin JSON client. Adds the CSRF token to every state-changing request. */
+import { getLang, t } from "./i18n";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -10,7 +11,7 @@ export class ApiError extends Error {
   }
 }
 
-export const UNAUTHORIZED_EVENT = "rased:unauthorized";
+export const UNAUTHORIZED_EVENT = "rasednet:unauthorized";
 
 let csrfToken: string | null = null;
 
@@ -46,10 +47,10 @@ export function buildUrl(path: string, query?: Record<string, QueryValue>): stri
 
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const method = options.method ?? "GET";
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = { Accept: "application/json", "X-Lang": getLang() };
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
   if (method !== "GET") {
-    const token = csrfToken ?? readCookie("rased_csrf");
+    const token = csrfToken ?? readCookie("rasednet_csrf");
     if (token) headers["X-CSRF-Token"] = token;
   }
   let response: Response;
@@ -61,7 +62,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
       credentials: "same-origin",
     });
   } catch {
-    throw new ApiError(0, "تعذر الاتصال بالخادم. تحقق من تشغيل خدمة راصد");
+    throw new ApiError(0, t("تعذر الاتصال بالخادم. تحقق من تشغيل خدمة راصد", "Cannot reach the server. Check that the RasedNet service is running."));
   }
   if (response.status === 204) return undefined as T;
   let data: unknown = null;
@@ -72,7 +73,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   }
   if (!response.ok) {
     const detail = (data as { detail?: unknown } | null)?.detail;
-    const message = typeof detail === "string" ? detail : "حدث خطأ غير متوقع";
+    const message = typeof detail === "string" ? detail : t("حدث خطأ غير متوقع", "An unexpected error occurred");
     if (response.status === 401 && path !== "/api/auth/login") {
       window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
     }
@@ -83,9 +84,9 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 
 /** GET a URL and save the response as a file (e.g. an Excel/JSON report). */
 export async function downloadGet(path: string, filename: string): Promise<void> {
-  const response = await fetch(path, { method: "GET", credentials: "same-origin" });
+  const response = await fetch(path, { method: "GET", credentials: "same-origin", headers: { "X-Lang": getLang() } });
   if (!response.ok) {
-    let message = "تعذر تنزيل الملف";
+    let message = t("تعذر تنزيل الملف", "Could not download the file");
     try {
       const data = await response.json();
       if (typeof data?.detail === "string") message = data.detail;
@@ -106,15 +107,15 @@ export async function downloadGet(path: string, filename: string): Promise<void>
 
 /** POST a JSON body and save the response as a file (e.g. CSV export). */
 export async function downloadFile(path: string, body: unknown, filename: string): Promise<void> {
-  const token = csrfToken ?? readCookie("rased_csrf");
+  const token = csrfToken ?? readCookie("rasednet_csrf");
   const response = await fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...(token ? { "X-CSRF-Token": token } : {}) },
+    headers: { "Content-Type": "application/json", "X-Lang": getLang(), ...(token ? { "X-CSRF-Token": token } : {}) },
     body: JSON.stringify(body),
     credentials: "same-origin",
   });
   if (!response.ok) {
-    let message = "تعذر تنزيل الملف";
+    let message = t("تعذر تنزيل الملف", "Could not download the file");
     try {
       const data = await response.json();
       if (typeof data?.detail === "string") message = data.detail;
@@ -135,5 +136,5 @@ export async function downloadFile(path: string, body: unknown, filename: string
 
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) return error.message;
-  return "حدث خطأ غير متوقع";
+  return t("حدث خطأ غير متوقع", "An unexpected error occurred");
 }

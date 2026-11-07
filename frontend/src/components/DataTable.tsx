@@ -1,4 +1,5 @@
 import { tableFeatures, useTable, type ColumnDef, type RowData } from "@tanstack/react-table";
+import { t } from "../i18n";
 import { Empty } from "./ui";
 
 // Rows are paginated, sorted and filtered on the server; the table only renders them.
@@ -14,7 +15,7 @@ interface Props<T extends RowData> {
   empty?: string;
 }
 
-export function DataTable<T extends RowData>({ data, columns, rowKey, onRowClick, empty = "لا توجد بيانات" }: Props<T>) {
+export function DataTable<T extends RowData>({ data, columns, rowKey, onRowClick, empty = t("لا توجد بيانات", "No data") }: Props<T>) {
   const table = useTable({ features, columns, data, getRowId: (row: T) => String(rowKey(row)) });
   if (data.length === 0) return <Empty>{empty}</Empty>;
   return (

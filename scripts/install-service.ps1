@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-  Registers RASED as a Windows scheduled task that starts at boot under a dedicated account
+  Registers RasedNet as a Windows scheduled task that starts at boot under a dedicated account
   (no third-party service wrapper required). Run elevated.
 .PARAMETER ServiceUser  Least-privilege local/domain account that runs the server (NOT a Domain Admin).
 #>
@@ -11,7 +11,7 @@ param(
     [switch]$Remove
 )
 . "$PSScriptRoot\common.ps1"
-$taskName = 'RASED Server'
+$taskName = 'RasedNet Server'
 if ($Remove) { Unregister-ScheduledTask -TaskName $taskName -Confirm:$false; Write-Host 'تمت إزالة المهمة.'; return }
 
 $credential = Get-Credential -UserName $ServiceUser -Message 'كلمة مرور حساب تشغيل خدمة راصد'
@@ -25,4 +25,4 @@ Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Se
 
 # Allow inbound HTTPS only from the internal management subnet you specify here.
 Write-Host "تم التسجيل. أضف قاعدة جدار حماية مقيدة، مثال:" -ForegroundColor Green
-Write-Host "  New-NetFirewallRule -DisplayName 'RASED HTTPS' -Direction Inbound -Protocol TCP -LocalPort $Port -RemoteAddress 10.0.10.0/24 -Action Allow"
+Write-Host "  New-NetFirewallRule -DisplayName 'RasedNet HTTPS' -Direction Inbound -Protocol TCP -LocalPort $Port -RemoteAddress 10.0.10.0/24 -Action Allow"

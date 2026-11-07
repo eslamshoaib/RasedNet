@@ -6,6 +6,7 @@ import { api, errorMessage } from "../api";
 import { useAuth } from "../auth";
 import { IconDownload, IconRefresh } from "../components/icons";
 import { Badge, Button, Card, ErrorBox, inputClass, Loading } from "../components/ui";
+import { getLang, t } from "../i18n";
 import type { Asset, Page, PhysicalGraph, SnmpCollectResult, SnmpCredential } from "../types";
 import { TYPE_COLORS } from "./topologyModel";
 
@@ -51,32 +52,33 @@ function CollectPanel({ onDone }: { onDone: () => void }) {
   const noCreds = (creds.data?.length ?? 0) === 0;
 
   return (
-    <Card title="جمع الاتصالات الفيزيائية عبر SNMP">
-      {noCreds && <ErrorBox error="لا يوجد حساب SNMP في الخزنة. أضف حساب SNMP v2c (سلسلة المجتمع) من «خزنة الدخول للأجهزة»." />}
+    <Card title={t("جمع الاتصالات الفيزيائية عبر SNMP", "Collect physical links over SNMP")}>
+      {noCreds && <ErrorBox error={t("لا يوجد حساب SNMP في الخزنة. أضف حساب SNMP v2c (سلسلة المجتمع) من «خزنة الدخول للأجهزة».", "No SNMP credential in the vault. Add an SNMP v2c account (community string) from “Device credential vault”.")} />}
       <div className="flex flex-wrap items-end gap-2">
         <label className="text-sm">
-          <span className="mb-0.5 block text-slate-600">المحوّل / الموجّه</span>
+          <span className="mb-0.5 block text-slate-600">{t("المحوّل / الموجّه", "Switch / router")}</span>
           <select className={`${inputClass} w-64`} value={assetId} onChange={(e) => setAssetId(e.target.value ? Number(e.target.value) : "")}>
-            <option value="">اختر جهاز شبكة…</option>
+            <option value="">{t("اختر جهاز شبكة…", "Choose a network device…")}</option>
             {assets.data?.map((a) => <option key={a.id} value={a.id}>{(a.display_name || a.hostname || a.current_ip)} — {a.current_ip}</option>)}
           </select>
         </label>
         <label className="text-sm">
-          <span className="mb-0.5 block text-slate-600">حساب SNMP</span>
+          <span className="mb-0.5 block text-slate-600">{t("حساب SNMP", "SNMP account")}</span>
           <select className={`${inputClass} w-48`} value={credId} onChange={(e) => setCredId(e.target.value ? Number(e.target.value) : "")}>
-            <option value="">اختر حساباً…</option>
+            <option value="">{t("اختر حساباً…", "Choose an account…")}</option>
             {creds.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </label>
         <Button onClick={() => collect.mutate()} disabled={!assetId || !credId || collect.isPending}>
-          <IconRefresh className="h-4 w-4" /> {collect.isPending ? "جارٍ القراءة…" : "اقرأ الجهاز"}
+          <IconRefresh className="h-4 w-4" /> {collect.isPending ? t("جارٍ القراءة…", "Reading…") : t("اقرأ الجهاز", "Read device")}
         </Button>
       </div>
       {collect.error && <div className="mt-2"><ErrorBox error={errorMessage(collect.error)} /></div>}
       {result && (
         <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-sm text-emerald-800">
-          {result.sys_name || "الجهاز"}: LLDP {result.counts.lldp}، CDP {result.counts.cdp}، FDB {result.counts.fdb}.
-          خُزِّن {result.stored.total} رابطاً، منها {result.stored.resolved} مرتبطة بأجهزة معروفة.
+          {getLang() === "en"
+            ? `${result.sys_name || "Device"}: LLDP ${result.counts.lldp}, CDP ${result.counts.cdp}, FDB ${result.counts.fdb}. Stored ${result.stored.total} link(s), ${result.stored.resolved} linked to known devices.`
+            : `${result.sys_name || "الجهاز"}: LLDP ${result.counts.lldp}، CDP ${result.counts.cdp}، FDB ${result.counts.fdb}. خُزِّن ${result.stored.total} رابطاً، منها ${result.stored.resolved} مرتبطة بأجهزة معروفة.`}
         </p>
       )}
     </Card>
@@ -117,14 +119,14 @@ export function PhysicalPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">التوبولوجي الفيزيائي (SNMP/LLDP)</h1>
-          <p className="text-sm text-slate-500">الروابط الفعلية بين المنافذ كما تقرؤها المحوّلات: من متصل بأي منفذ. نقرتان على جهاز لفتح صفحته.</p>
+          <h1 className="text-2xl font-bold">{t("التوبولوجي الفيزيائي (SNMP/LLDP)", "Physical topology (SNMP/LLDP)")}</h1>
+          <p className="text-sm text-slate-500">{t("الروابط الفعلية بين المنافذ كما تقرؤها المحوّلات: من متصل بأي منفذ. نقرتان على جهاز لفتح صفحته.", "The real port-to-port links as read from the switches: who is connected to which port. Double-click a device to open its page.")}</p>
         </div>
         {graph.data && (
           <div className="flex gap-2 text-xs">
-            <Badge tone="teal">روابط: {graph.data.stats.links}</Badge>
-            <Badge tone="blue">عناصر: {graph.data.stats.nodes}</Badge>
-            <Badge tone="green">مرتبطة بأجهزة معروفة: {graph.data.stats.resolved}</Badge>
+            <Badge tone="teal">{t("روابط:", "Links:")} {graph.data.stats.links}</Badge>
+            <Badge tone="blue">{t("عناصر:", "Nodes:")} {graph.data.stats.nodes}</Badge>
+            <Badge tone="green">{t("مرتبطة بأجهزة معروفة:", "Linked to known devices:")} {graph.data.stats.resolved}</Badge>
           </div>
         )}
       </div>
@@ -133,22 +135,22 @@ export function PhysicalPage() {
 
       <Card>
         <div className="mb-2 flex flex-wrap items-center gap-2">
-          <Button variant="secondary" onClick={() => graph.refetch()}><IconRefresh className="h-4 w-4" /> تحديث</Button>
-          <Button variant="secondary" onClick={() => cy.current?.fit(undefined, 40)}>⤢ ملاءمة</Button>
-          <Button variant="secondary" onClick={() => { const uri = cy.current?.png({ full: true, scale: 2, bg: "#fff" }); if (uri) { const a = document.createElement("a"); a.href = uri; a.download = "rased-physical-map.png"; a.click(); } }}>
-            <IconDownload className="h-4 w-4" /> صورة
+          <Button variant="secondary" onClick={() => graph.refetch()}><IconRefresh className="h-4 w-4" /> {t("تحديث", "Refresh")}</Button>
+          <Button variant="secondary" onClick={() => cy.current?.fit(undefined, 40)}>⤢ {t("ملاءمة", "Fit")}</Button>
+          <Button variant="secondary" onClick={() => { const uri = cy.current?.png({ full: true, scale: 2, bg: "#fff" }); if (uri) { const a = document.createElement("a"); a.href = uri; a.download = "rasednet-physical-map.png"; a.click(); } }}>
+            <IconDownload className="h-4 w-4" /> {t("صورة", "Image")}
           </Button>
-          <span className="text-xs text-slate-500">◆ موجّه — ▲ نقطة وصول — ▢ محوّل — خط متصل = LLDP، بنفسجي = CDP، متقطّع = جدول التوجيه</span>
+          <span className="text-xs text-slate-500">{t("◆ موجّه — ▲ نقطة وصول — ▢ محوّل — خط متصل = LLDP، بنفسجي = CDP، متقطّع = جدول التوجيه", "◆ router — ▲ access point — ▢ switch — solid line = LLDP, purple = CDP, dashed = forwarding table")}</span>
         </div>
         <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-[radial-gradient(circle_at_1px_1px,#e2e8f0_1px,transparent_0)] [background-size:22px_22px]">
           {graph.isLoading && <div className="absolute inset-0 grid place-items-center"><Loading /></div>}
           {graph.error && <div className="p-4"><ErrorBox error={graph.error} /></div>}
           {!graph.isLoading && !elements.length && (
             <div className="grid h-72 place-items-center p-4 text-center text-sm text-slate-500">
-              لا توجد روابط فيزيائية بعد. اختر محوّلاً وحساب SNMP بالأعلى واضغط «اقرأ الجهاز» لرسم الاتصالات.
+              {t("لا توجد روابط فيزيائية بعد. اختر محوّلاً وحساب SNMP بالأعلى واضغط «اقرأ الجهاز» لرسم الاتصالات.", "No physical links yet. Choose a switch and an SNMP account above and press “Read device” to map the connections.")}
             </div>
           )}
-          <div ref={container} dir="ltr" style={{ height: "66vh", minHeight: 420, display: elements.length ? "block" : "none" }} aria-label="الخريطة الفيزيائية" />
+          <div ref={container} dir="ltr" style={{ height: "66vh", minHeight: 420, display: elements.length ? "block" : "none" }} aria-label={t("الخريطة الفيزيائية", "Physical map")} />
         </div>
       </Card>
     </div>

@@ -63,7 +63,7 @@ audit trail, availability of the production network.
 | **R**epudiation | `audit_logs` for login/logout, denied authorisation, users, scopes, approvals, scans, cancels, emergency stop, asset edits, alert transitions. |
 | **I**nformation disclosure | Role-based read permissions; no CDN/telemetry; Swagger UI disabled; `.env`/key files ACL-restricted by setup; backups AES-256-GCM encrypted, plaintext dump deleted. |
 | **D**enial of service to production network | Explicit scope approval; private ranges only by default; host-count cap; IPv6 enumeration limited to /120; sensitive scopes restricted to the safe profile; rate/concurrency/per-host limits; cancellation and emergency stop; no intrusive profiles. |
-| DoS against RASED | API rate limit; paginated queries with max page size; bounded chunk memory. |
+| DoS against RasedNet | API rate limit; paginated queries with max page size; bounded chunk memory. |
 | **E**levation of privilege | Permission checked per endpoint; last active admin cannot be removed; operators cannot approve scopes; auditors are read-only. |
 | Scanner abused to attack third parties | Public ranges rejected unless explicitly enabled; scope re-validated at execution; full audit trail. |
 

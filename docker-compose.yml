@@ -1,7 +1,10 @@
 # Optional deployment with Docker Compose.
 #   1. Create .env next to this file with:  POSTGRES_PASSWORD=<strong password>
-#   2. Put rased.crt / rased.key in ./certs  (python -m rased gen-cert --out-dir certs)
-#   3. docker compose up -d && docker compose exec app python -m rased create-admin --username admin
+#   2. Put rasednet.crt / rasednet.key in ./certs  (python -m rasednet gen-cert --out-dir certs)
+#   3. docker compose up -d
+#      The app auto-runs init-db and seeds a standard admin (admin / RasedNet@2026);
+#      you must change that password on first sign-in. For an extra named admin:
+#      docker compose exec app python -m rasednet create-admin --username <name>
 # Note: `network_mode: host` is required for ARP/MAC visibility of the local segment (Linux hosts only).
 # On Docker Desktop (Windows/macOS) the scanner sees the VM network, so MAC addresses are not observable.
 services:
@@ -9,15 +12,15 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: rased
-      POSTGRES_DB: rased
+      POSTGRES_USER: rasednet
+      POSTGRES_DB: rasednet
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rased -d rased"]
+      test: ["CMD-SHELL", "pg_isready -U rasednet -d rasednet"]
       interval: 10s
       retries: 10
   app:
@@ -28,8 +31,8 @@ services:
         condition: service_healthy
     network_mode: host
     environment:
-      RASED_DATABASE_URL: postgresql+psycopg://rased:${POSTGRES_PASSWORD}@127.0.0.1:5432/rased
-      RASED_COOKIE_SECURE: "true"
+      RASEDNET_DATABASE_URL: postgresql+psycopg://rasednet:${POSTGRES_PASSWORD}@127.0.0.1:5432/rasednet
+      RASEDNET_COOKIE_SECURE: "true"
     volumes:
       - ./certs:/certs:ro
 volumes:

@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { errorMessage } from "../api";
+import { getLang, t } from "../i18n";
 
 export function Ltr({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
@@ -87,7 +88,7 @@ export function ErrorBox({ error }: { error: unknown }) {
 }
 
 export function Loading() {
-  return <div className="py-8 text-center text-sm text-slate-500">جارٍ التحميل…</div>;
+  return <div className="py-8 text-center text-sm text-slate-500">{t("جارٍ التحميل…", "Loading…")}</div>;
 }
 
 export function Empty({ children }: { children: ReactNode }) {
@@ -99,14 +100,14 @@ export function Pager({ page, pageSize, total, onPage }: { page: number; pageSiz
   return (
     <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
       <span>
-        الإجمالي: {total} — صفحة {page} من {pages}
+        {getLang() === "en" ? `Total: ${total} — page ${page} of ${pages}` : `الإجمالي: ${total} — صفحة ${page} من ${pages}`}
       </span>
       <div className="flex gap-2">
         <Button variant="secondary" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-          السابق
+          {t("السابق", "Previous")}
         </Button>
         <Button variant="secondary" disabled={page >= pages} onClick={() => onPage(page + 1)}>
-          التالي
+          {t("التالي", "Next")}
         </Button>
       </div>
     </div>

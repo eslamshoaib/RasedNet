@@ -1,4 +1,4 @@
-﻿# Shared helpers for RASED operations scripts (dot-sourced).
+﻿# Shared helpers for RasedNet operations scripts (dot-sourced).
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $OutputEncoding = [Text.Encoding]::UTF8
@@ -19,8 +19,8 @@ function Read-RasedEnv {
 
 function Get-PgConnection {
     # Parses postgresql+psycopg://user:password@host:port/database
-    $url = (Read-RasedEnv)['RASED_DATABASE_URL']
-    if (-not $url) { throw 'RASED_DATABASE_URL غير محدد في ملف .env' }
+    $url = (Read-RasedEnv)['RASEDNET_DATABASE_URL']
+    if (-not $url) { throw 'RASEDNET_DATABASE_URL غير محدد في ملف .env' }
     $uri = [Uri]($url -replace '^postgresql\+psycopg://', 'postgresql://')
     $userInfo = $uri.UserInfo.Split(':', 2)
     return [pscustomobject]@{
@@ -44,7 +44,7 @@ function Find-PgTool([string]$Name, [string]$PgBin) {
 function Invoke-Rased([string[]]$Arguments) {
     Push-Location $BackendDir
     try {
-        & $Python -m rased @Arguments
-        if ($LASTEXITCODE -ne 0) { throw "فشل الأمر: rased $($Arguments -join ' ')" }
+        & $Python -m rasednet @Arguments
+        if ($LASTEXITCODE -ne 0) { throw "فشل الأمر: rasednet $($Arguments -join ' ')" }
     } finally { Pop-Location }
 }

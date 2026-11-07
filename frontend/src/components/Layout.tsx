@@ -3,7 +3,11 @@ import { Suspense, useEffect, useRef, useState, type ComponentType } from "react
 import { NavLink, Outlet } from "react-router";
 import { api, errorMessage } from "../api";
 import { useAuth } from "../auth";
+import { getLang, t } from "../i18n";
 import type { DashboardSummary, VulnSummary } from "../types";
+import { LanguageToggle } from "./LanguageToggle";
+
+const ROLE_EN: Record<string, string> = { admin: "Administrator", operator: "Operator", auditor: "Auditor" };
 
 function playAlarm(): void {
   try {
@@ -25,7 +29,7 @@ function playAlarm(): void {
 
 function VulnAlarm() {
   const { can } = useAuth();
-  const [muted, setMuted] = useState<boolean>(() => { try { return localStorage.getItem("rased.vulnMute") === "1"; } catch { return false; } });
+  const [muted, setMuted] = useState<boolean>(() => { try { return localStorage.getItem("rasednet.vulnMute") === "1"; } catch { return false; } });
   const prev = useRef<number | null>(null);
   const q = useQuery({
     queryKey: ["vuln-alarm"], enabled: can("asset:read"), refetchInterval: 30000,
@@ -41,12 +45,12 @@ function VulnAlarm() {
   const toggle = () => {
     const nm = !muted;
     setMuted(nm);
-    try { localStorage.setItem("rased.vulnMute", nm ? "1" : "0"); } catch { /* ignore */ }
+    try { localStorage.setItem("rasednet.vulnMute", nm ? "1" : "0"); } catch { /* ignore */ }
     if (!nm) playAlarm();  // a click unlocks audio + previews the sound
   };
   return (
     <button type="button" onClick={toggle} aria-pressed={muted}
-      title={muted ? "تنبيه الثغرات الصوتي: مكتوم — اضغط للتفعيل" : "تنبيه الثغرات الصوتي: مفعّل — اضغط للكتم"}
+      title={muted ? t("تنبيه الثغرات الصوتي: مكتوم — اضغط للتفعيل", "Vulnerability sound alert: muted — click to enable") : t("تنبيه الثغرات الصوتي: مفعّل — اضغط للكتم", "Vulnerability sound alert: on — click to mute")}
       className={`rounded-xl border px-2.5 py-1.5 text-sm ${muted ? "border-slate-200 bg-white text-slate-400" : "border-amber-300 bg-amber-50 text-amber-700"}`}>
       {muted ? "🔕" : "🔔"}
     </button>
@@ -66,50 +70,52 @@ interface NavItem {
   icon: ComponentType<{ className?: string }>;
 }
 
-export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
-  {
-    title: "المراقبة",
-    items: [
-      { to: "/", label: "لوحة التحكم الرئيسية", permission: "dashboard:read", icon: IconDashboard },
-      { to: "/topology", label: "خريطة الشبكة", permission: "asset:read", icon: IconMap },
-      { to: "/physical", label: "التوبولوجي الفيزيائي", permission: "asset:read", icon: IconLink },
-      { to: "/fusion", label: "جداول الدمج والتحليل", permission: "asset:read", icon: IconTable },
-      { to: "/vulnerabilities", label: "الثغرات الأمنية", permission: "asset:read", icon: IconBug },
-      { to: "/reports", label: "التقارير", permission: "report:read", icon: IconReport },
-      { to: "/compliance", label: "الامتثال للمعايير", permission: "report:read", icon: IconShield },
-      { to: "/alerts", label: "التنبيهات والأحداث", permission: "alert:read", icon: IconBell },
-    ],
-  },
-  {
-    title: "الجرد والاكتشاف",
-    items: [
-      { to: "/discovery", label: "اكتشاف الشبكة", permission: "scope:read", icon: IconRadar },
-      { to: "/assets", label: "الأجهزة المتصلة", permission: "asset:read", icon: IconDevices },
-      { to: "/services", label: "المنافذ والبروتوكولات", permission: "asset:read", icon: IconPlug },
-      { to: "/scans", label: "سجل الفحوصات", permission: "scan:read", icon: IconHistory },
-      { to: "/events", label: "سجل التغييرات", permission: "alert:read", icon: IconList },
-    ],
-  },
-  {
-    title: "الإدارة",
-    items: [
-      { to: "/profiles", label: "ملفات الفحص", permission: "scan:read", icon: IconSliders },
-      { to: "/vault", label: "خزنة الدخول للأجهزة", permission: "remote:verify", icon: IconKey },
-      { to: "/directory", label: "مستخدمو الدومين", permission: "directory:read", icon: IconDomain },
-      { to: "/users", label: "المستخدمون والصلاحيات", permission: "user:manage", icon: IconUsers },
-      { to: "/audit", label: "سجل التدقيق", permission: "audit:read", icon: IconShield },
-      { to: "/operations", label: "السياسات والإشعارات", permission: "data:manage", icon: IconClipboard },
-      { to: "/settings", label: "الإعدادات والصيانة", permission: "data:manage", icon: IconSettings },
-      { to: "/account", label: "حسابي", permission: "", icon: IconUser },
-    ],
-  },
-];
+function navGroups(): { title: string; items: NavItem[] }[] {
+  return [
+    {
+      title: t("المراقبة", "Monitoring"),
+      items: [
+        { to: "/", label: t("لوحة التحكم الرئيسية", "Dashboard"), permission: "dashboard:read", icon: IconDashboard },
+        { to: "/topology", label: t("خريطة الشبكة", "Network map"), permission: "asset:read", icon: IconMap },
+        { to: "/physical", label: t("التوبولوجي الفيزيائي", "Physical topology"), permission: "asset:read", icon: IconLink },
+        { to: "/fusion", label: t("جداول الدمج والتحليل", "Fusion & analytics"), permission: "asset:read", icon: IconTable },
+        { to: "/vulnerabilities", label: t("الثغرات الأمنية", "Vulnerabilities"), permission: "asset:read", icon: IconBug },
+        { to: "/reports", label: t("التقارير", "Reports"), permission: "report:read", icon: IconReport },
+        { to: "/compliance", label: t("الامتثال للمعايير", "Compliance"), permission: "report:read", icon: IconShield },
+        { to: "/alerts", label: t("التنبيهات والأحداث", "Alerts & events"), permission: "alert:read", icon: IconBell },
+      ],
+    },
+    {
+      title: t("الجرد والاكتشاف", "Inventory & discovery"),
+      items: [
+        { to: "/discovery", label: t("اكتشاف الشبكة", "Network discovery"), permission: "scope:read", icon: IconRadar },
+        { to: "/assets", label: t("الأجهزة المتصلة", "Devices"), permission: "asset:read", icon: IconDevices },
+        { to: "/services", label: t("المنافذ والبروتوكولات", "Ports & protocols"), permission: "asset:read", icon: IconPlug },
+        { to: "/scans", label: t("سجل الفحوصات", "Scan history"), permission: "scan:read", icon: IconHistory },
+        { to: "/events", label: t("سجل التغييرات", "Change log"), permission: "alert:read", icon: IconList },
+      ],
+    },
+    {
+      title: t("الإدارة", "Administration"),
+      items: [
+        { to: "/profiles", label: t("ملفات الفحص", "Scan profiles"), permission: "scan:read", icon: IconSliders },
+        { to: "/vault", label: t("خزنة الدخول للأجهزة", "Device credential vault"), permission: "remote:verify", icon: IconKey },
+        { to: "/directory", label: t("مستخدمو الدومين", "Domain users"), permission: "directory:read", icon: IconDomain },
+        { to: "/users", label: t("المستخدمون والصلاحيات", "Users & permissions"), permission: "user:manage", icon: IconUsers },
+        { to: "/audit", label: t("سجل التدقيق", "Audit log"), permission: "audit:read", icon: IconShield },
+        { to: "/operations", label: t("السياسات والإشعارات", "Policies & notifications"), permission: "data:manage", icon: IconClipboard },
+        { to: "/settings", label: t("الإعدادات والصيانة", "Settings & maintenance"), permission: "data:manage", icon: IconSettings },
+        { to: "/account", label: t("حسابي", "My account"), permission: "", icon: IconUser },
+      ],
+    },
+  ];
+}
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const { can } = useAuth();
   return (
-    <nav aria-label="القائمة الرئيسية" className="space-y-5 px-3 pb-6">
-      {NAV_GROUPS.map((group) => {
+    <nav aria-label={t("القائمة الرئيسية", "Main menu")} className="space-y-5 px-3 pb-6">
+      {navGroups().map((group) => {
         const items = group.items.filter((i) => !i.permission || can(i.permission));
         if (!items.length) return null;
         return (
@@ -145,8 +151,8 @@ function Brand() {
         <IconRadar className="h-6 w-6 text-white" />
       </div>
       <div>
-        <div className="text-xl font-bold leading-tight text-white">راصد</div>
-        <div className="text-[11px] text-slate-400">رصد الشبكة واستخباراتها</div>
+        <div className="text-xl font-bold leading-tight text-white">{t("راصد", "RasedNet")}</div>
+        <div className="text-[11px] text-slate-400">{t("رصد الشبكة واستخباراتها", "Network monitoring & intelligence")}</div>
       </div>
     </div>
   );
@@ -166,7 +172,10 @@ export function Layout() {
     mutationFn: () => api<number[]>("/api/scans/emergency-stop", { method: "POST" }),
     onSuccess: (ids) => {
       void queryClient.invalidateQueries();
-      window.alert(ids.length ? `تم طلب إيقاف ${ids.length} فحص.` : "لا توجد فحوص قيد التنفيذ.");
+      const msg = ids.length
+        ? (getLang() === "en" ? `Stop requested for ${ids.length} scan(s).` : `تم طلب إيقاف ${ids.length} فحص.`)
+        : t("لا توجد فحوص قيد التنفيذ.", "No scans are currently running.");
+      window.alert(msg);
     },
     onError: (e) => window.alert(errorMessage(e)),
   });
@@ -190,32 +199,33 @@ export function Layout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 bg-white/80 px-4 py-3 backdrop-blur md:px-6">
           <div className="flex items-center gap-3">
-            <button type="button" className="rounded-lg border border-slate-200 px-2 py-1 text-sm lg:hidden" onClick={() => setMobileOpen(true)} aria-label="فتح القائمة">☰</button>
+            <button type="button" className="rounded-lg border border-slate-200 px-2 py-1 text-sm lg:hidden" onClick={() => setMobileOpen(true)} aria-label={t("فتح القائمة", "Open menu")}>☰</button>
             {running > 0 ? (
               <span className="flex items-center gap-2 rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
-                <span className="live-dot h-2 w-2 rounded-full bg-cyan-500" /> فحوص جارية: {running}
+                <span className="live-dot h-2 w-2 rounded-full bg-cyan-500" /> {getLang() === "en" ? `Scans running: ${running}` : `فحوص جارية: ${running}`}
               </span>
             ) : (
-              <span className="text-xs text-slate-500">لا توجد فحوص جارية</span>
+              <span className="text-xs text-slate-500">{t("لا توجد فحوص جارية", "No scans running")}</span>
             )}
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-slate-600 sm:inline">
-              {me?.user.display_name} <span className="text-slate-400">— {me?.user.role.name_ar}</span>
+              {me?.user.display_name} <span className="text-slate-400">— {me ? (getLang() === "en" ? (ROLE_EN[me.user.role.name] ?? me.user.role.name_ar) : me.user.role.name_ar) : ""}</span>
             </span>
+            <LanguageToggle />
             <VulnAlarm />
             {can("scan:run") && (
               <button
                 type="button"
                 disabled={stop.isPending}
-                onClick={() => window.confirm("إيقاف طارئ لجميع الفحوص الجارية والمنتظرة؟") && stop.mutate()}
+                onClick={() => window.confirm(t("إيقاف طارئ لجميع الفحوص الجارية والمنتظرة؟", "Emergency-stop all running and queued scans?")) && stop.mutate()}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-red-700 disabled:opacity-50"
               >
-                <IconStop className="h-4 w-4" /> إيقاف طارئ
+                <IconStop className="h-4 w-4" /> {t("إيقاف طارئ", "Emergency stop")}
               </button>
             )}
             <button type="button" onClick={() => void logout()} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
-              <IconLogout className="h-4 w-4" /> خروج
+              <IconLogout className="h-4 w-4" /> {t("خروج", "Sign out")}
             </button>
           </div>
         </header>

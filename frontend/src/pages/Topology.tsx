@@ -7,32 +7,33 @@ import { useAuth } from "../auth";
 import { IconDownload, IconRefresh } from "../components/icons";
 import { RescanAllButton } from "../components/RescanAllButton";
 import { Badge, Button, Card, ErrorBox, inputClass, Loading, Ltr, STATUS_TONE } from "../components/ui";
-import { ASSET_STATUS, DEVICE_TYPES, label, OS_FAMILIES } from "../labels";
+import { getLang, t } from "../i18n";
+import { ASSET_STATUS, DEVICE_TYPES, label, type LabelMap, OS_FAMILIES } from "../labels";
 import type { Job, Profile, TopoEdge, TopoNode, Topology } from "../types";
 import {
-  applyFilters, clearHighlight, clearPositions, COLOR_MODES, type ColorMode, coverage, emptyFilters, type Filters,
-  focusNeighborhood, highlightPath, LABEL_MODES, type LabelMode, loadPositions, OS_COLORS, type Positions, RISK_COLORS,
+  applyFilters, clearHighlight, clearPositions, colorModes, type ColorMode, coverage, emptyFilters, type Filters,
+  focusNeighborhood, highlightPath, labelModes, type LabelMode, loadPositions, OS_COLORS, type Positions, RISK_COLORS,
   savePositions, searchNodes, STATUS_COLORS, toElements, TYPE_COLORS,
 } from "./topologyModel";
 
 const FONT = '"Cairo", "Segoe UI", Tahoma, sans-serif';
 
-const LAYOUTS: Record<string, string> = {
-  fusion: "نقاط متفرّعة (فيوجن)",
-  cose: "تلقائي (قوى متوازنة)",
-  concentric: "دوائر حول خادم الفحص",
-  breadthfirst: "شجري من خادم الفحص",
-  grid: "شبكي منتظم",
-  circle: "دائري",
-};
+const layouts = (): Record<string, string> => ({
+  fusion: t("نقاط متفرّعة (فيوجن)", "Radial dots (Fusion)"),
+  cose: t("تلقائي (قوى متوازنة)", "Automatic (force-directed)"),
+  concentric: t("دوائر حول خادم الفحص", "Concentric around the scanner"),
+  breadthfirst: t("شجري من خادم الفحص", "Tree from the scanner"),
+  grid: t("شبكي منتظم", "Regular grid"),
+  circle: t("دائري", "Circle"),
+});
 
-export const EDGE_KINDS: Record<string, string> = {
-  attached: "اتصال مباشر بخادم الفحص",
-  member: "عضو في الشبكة",
-  gateway: "بوابة الشبكة",
-  path: "مسار توجيه مرصود",
-  routes: "يوصل إلى الشبكة",
-  multihomed: "جهاز بعناوين في أكثر من شبكة",
+export const EDGE_KINDS: LabelMap = {
+  attached: ["اتصال مباشر بخادم الفحص", "Direct link to the scanner"],
+  member: ["عضو في الشبكة", "Member of the network"],
+  gateway: ["بوابة الشبكة", "Network gateway"],
+  path: ["مسار توجيه مرصود", "Observed routing path"],
+  routes: ["يوصل إلى الشبكة", "Routes to the network"],
+  multihomed: ["جهاز بعناوين في أكثر من شبكة", "Device with addresses in multiple networks"],
 };
 
 const STYLE: cytoscape.StylesheetJson = [
@@ -156,14 +157,14 @@ export function TopologyPage() {
   const profiles = useQuery({ queryKey: ["profiles"], queryFn: () => api<Profile[]>("/api/profiles"), enabled: can("scan:run") });
   const trace = useMutation({
     mutationFn: (targets: string[]) => api<{ traced: number }>("/api/topology/trace", { method: "POST", body: { targets } }),
-    onSuccess: (r) => { setNotice(`تم تتبع ${r.traced} مساراً. الشبكات المكتشفة على المسار تظهر في «اكتشاف الشبكة» لاعتمادها وفحصها.`); void query.refetch(); },
+    onSuccess: (r) => { setNotice(getLang() === "en" ? `Traced ${r.traced} path(s). Networks discovered along the path appear in “Network discovery” for approval and scanning.` : `تم تتبع ${r.traced} مساراً. الشبكات المكتشفة على المسار تظهر في «اكتشاف الشبكة» لاعتمادها وفحصها.`); void query.refetch(); },
   });
   const rescan = useMutation({
     mutationFn: (assetId: number) => {
       const pid = profiles.data?.find((p) => p.code === "standard_inventory")?.id ?? profiles.data?.[0]?.id;
       return api<Job>(`/api/assets/${assetId}/rescan`, { method: "POST", body: { profile_id: pid } });
     },
-    onSuccess: (job) => setNotice(`بدأ فحص الجهاز (#${job.id}). ستتحدث الخريطة بعد انتهائه.`),
+    onSuccess: (job) => setNotice(getLang() === "en" ? `Device scan started (#${job.id}). The map will update when it finishes.` : `بدأ فحص الجهاز (#${job.id}). ستتحدث الخريطة بعد انتهائه.`),
   });
 
   const fusion = layout === "fusion";
@@ -258,14 +259,14 @@ export function TopologyPage() {
 
   const exportJson = () => {
     if (!query.data) return;
-    download("rased-network-map.json", URL.createObjectURL(new Blob([JSON.stringify(query.data, null, 2)], { type: "application/json" })));
+    download("rasednet-network-map.json", URL.createObjectURL(new Blob([JSON.stringify(query.data, null, 2)], { type: "application/json" })));
   };
 
   const legendColors: Record<string, [string, string][]> = {
     type: Object.entries(TYPE_COLORS).filter(([k]) => typeCounts[k]).map(([k, v]) => [label(DEVICE_TYPES, k), v]),
     status: Object.entries(STATUS_COLORS).map(([k, v]) => [label(ASSET_STATUS, k), v]),
     os: Object.entries(OS_COLORS).map(([k, v]) => [label(OS_FAMILIES, k), v]),
-    risk: [["عليه تنبيهات مفتوحة", RISK_COLORS.alert], ["5 خدمات مفتوحة أو أكثر", RISK_COLORS.exposed], ["لا ملاحظات", RISK_COLORS.ok]],
+    risk: [[t("عليه تنبيهات مفتوحة", "Has open alerts"), RISK_COLORS.alert], [t("5 خدمات مفتوحة أو أكثر", "5+ open services"), RISK_COLORS.exposed], [t("لا ملاحظات", "No findings"), RISK_COLORS.ok]],
   };
   const stats = query.data?.stats;
 
@@ -273,16 +274,16 @@ export function TopologyPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">خريطة الشبكة</h1>
-          <p className="text-sm text-slate-500">اسحب العناصر لترتيبها • عجلة الفأرة للتكبير • نقرة لعرض التفاصيل • نقرتان لفتح صفحة الجهاز • Esc لإلغاء التمييز</p>
+          <h1 className="text-2xl font-bold">{t("خريطة الشبكة", "Network map")}</h1>
+          <p className="text-sm text-slate-500">{t("اسحب العناصر لترتيبها • عجلة الفأرة للتكبير • نقرة لعرض التفاصيل • نقرتان لفتح صفحة الجهاز • Esc لإلغاء التمييز", "Drag nodes to arrange • scroll to zoom • click for details • double-click to open a device • Esc to clear highlight")}</p>
         </div>
         {stats && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <RescanAllButton />
-            <Badge tone="blue">شبكات: {stats.networks}</Badge>
-            <Badge tone="teal">أجهزة: {stats.devices} (ظاهر {visibleCount})</Badge>
-            <Badge tone="red">موجّهات: {stats.routers}</Badge>
-            <Badge tone="purple">مسارات مرصودة: {stats.paths}</Badge>
+            <Badge tone="blue">{t("شبكات:", "Networks:")} {stats.networks}</Badge>
+            <Badge tone="teal">{t("أجهزة:", "Devices:")} {stats.devices} ({t("ظاهر", "shown")} {visibleCount})</Badge>
+            <Badge tone="red">{t("موجّهات:", "Routers:")} {stats.routers}</Badge>
+            <Badge tone="purple">{t("مسارات مرصودة:", "Observed paths:")} {stats.paths}</Badge>
           </div>
         )}
       </div>
@@ -291,7 +292,7 @@ export function TopologyPage() {
         <Card>
           {/* Display controls */}
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <input className={`${inputClass} max-w-xs`} placeholder="بحث: عنوان، اسم، طراز، MAC، شبكة…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="بحث في الخريطة" />
+            <input className={`${inputClass} max-w-xs`} placeholder={t("بحث: عنوان، اسم، طراز، MAC، شبكة…", "Search: IP, name, model, MAC, network…")} value={search} onChange={(e) => setSearch(e.target.value)} aria-label={t("بحث في الخريطة", "Search the map")} />
             <select className={`${inputClass} w-auto`} value={layout} onChange={(e) => {
               const next = e.target.value;
               // Toggling Fusion rebuilds the graph (different elements) and runs the layout itself;
@@ -299,42 +300,42 @@ export function TopologyPage() {
               const sameMode = (next === "fusion") === fusion;
               setLayout(next);
               if (sameMode) runLayout(next);
-            }} aria-label="طريقة الترتيب">
-              {Object.entries(LAYOUTS).map(([k, v]) => <option key={k} value={k}>ترتيب: {v}</option>)}
+            }} aria-label={t("طريقة الترتيب", "Layout")}>
+              {Object.entries(layouts()).map(([k, v]) => <option key={k} value={k}>{t("ترتيب:", "Layout:")} {v}</option>)}
             </select>
-            <select className={`${inputClass} w-auto`} value={colorMode} onChange={(e) => setColorMode(e.target.value as ColorMode)} aria-label="التلوين">
-              {Object.entries(COLOR_MODES).map(([k, v]) => <option key={k} value={k}>تلوين {v}</option>)}
+            <select className={`${inputClass} w-auto`} value={colorMode} onChange={(e) => setColorMode(e.target.value as ColorMode)} aria-label={t("التلوين", "Colouring")}>
+              {Object.entries(colorModes()).map(([k, v]) => <option key={k} value={k}>{t("تلوين", "Colour")} {v}</option>)}
             </select>
-            <select className={`${inputClass} w-auto`} value={labelMode} onChange={(e) => setLabelMode(e.target.value as LabelMode)} aria-label="التسميات">
-              {Object.entries(LABEL_MODES).map(([k, v]) => <option key={k} value={k}>تسميات: {v}</option>)}
+            <select className={`${inputClass} w-auto`} value={labelMode} onChange={(e) => setLabelMode(e.target.value as LabelMode)} aria-label={t("التسميات", "Labels")}>
+              {Object.entries(labelModes()).map(([k, v]) => <option key={k} value={k}>{t("تسميات:", "Labels:")} {v}</option>)}
             </select>
-            <label className={`flex items-center gap-1.5 text-sm ${fusion ? "opacity-40" : ""}`} title={fusion ? "غير متاح في نمط النقاط المتفرّعة" : ""}><input type="checkbox" checked={group && !fusion} disabled={fusion} onChange={(e) => setGroup(e.target.checked)} /> تجميع الأجهزة داخل شبكاتها</label>
-            <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" checked={includeDevices} onChange={(e) => setIncludeDevices(e.target.checked)} /> كل الأجهزة</label>
+            <label className={`flex items-center gap-1.5 text-sm ${fusion ? "opacity-40" : ""}`} title={fusion ? t("غير متاح في نمط النقاط المتفرّعة", "Not available in radial-dots mode") : ""}><input type="checkbox" checked={group && !fusion} disabled={fusion} onChange={(e) => setGroup(e.target.checked)} /> {t("تجميع الأجهزة داخل شبكاتها", "Group devices inside their networks")}</label>
+            <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" checked={includeDevices} onChange={(e) => setIncludeDevices(e.target.checked)} /> {t("كل الأجهزة", "All devices")}</label>
           </div>
           {/* Navigation & actions */}
           <div className="mb-3 flex flex-wrap items-center gap-1.5">
-            <ToolButton title="تكبير" onClick={() => zoomBy(1.3)}>＋</ToolButton>
-            <ToolButton title="تصغير" onClick={() => zoomBy(1 / 1.3)}>－</ToolButton>
-            <ToolButton title="ملاءمة الخريطة للشاشة" onClick={() => cy.current?.animate({ fit: { eles: cy.current.elements().not(".hidden"), padding: 40 } }, { duration: 300 })}>⤢</ToolButton>
-            <ToolButton title="التركيز على خادم راصد" onClick={() => { const s = cy.current?.getElementById("scanner"); if (s?.nonempty()) cy.current?.animate({ center: { eles: s }, zoom: 1.2 }, { duration: 300 }); }}>★</ToolButton>
-            <ToolButton title={fullscreen ? "إنهاء ملء الشاشة" : "ملء الشاشة"} active={fullscreen}
+            <ToolButton title={t("تكبير", "Zoom in")} onClick={() => zoomBy(1.3)}>＋</ToolButton>
+            <ToolButton title={t("تصغير", "Zoom out")} onClick={() => zoomBy(1 / 1.3)}>－</ToolButton>
+            <ToolButton title={t("ملاءمة الخريطة للشاشة", "Fit the map to the screen")} onClick={() => cy.current?.animate({ fit: { eles: cy.current.elements().not(".hidden"), padding: 40 } }, { duration: 300 })}>⤢</ToolButton>
+            <ToolButton title={t("التركيز على خادم راصد", "Focus on the RasedNet server")} onClick={() => { const s = cy.current?.getElementById("scanner"); if (s?.nonempty()) cy.current?.animate({ center: { eles: s }, zoom: 1.2 }, { duration: 300 }); }}>★</ToolButton>
+            <ToolButton title={fullscreen ? t("إنهاء ملء الشاشة", "Exit full screen") : t("ملء الشاشة", "Full screen")} active={fullscreen}
               onClick={() => (document.fullscreenElement ? void document.exitFullscreen() : void wrapper.current?.requestFullscreen())}>⛶</ToolButton>
             <span className="mx-1 h-6 w-px bg-slate-200" />
-            <ToolButton title="إعادة الترتيب التلقائي" onClick={() => { kept.current = {}; clearPositions(); runLayout(layout); setNotice("أُعيد ترتيب الخريطة."); }}>↻ ترتيب</ToolButton>
-            <ToolButton title="تثبيت مواقع العناصر" active={locked} onClick={() => setLocked(!locked)}>{locked ? "🔒 مثبتة" : "🔓 تثبيت"}</ToolButton>
-            <ToolButton title="حفظ الترتيب الحالي" onClick={() => { if (cy.current) setNotice(`تم حفظ مواقع ${savePositions(cy.current)} عنصراً، وستُستخدم عند فتح الخريطة.`); }}>💾 حفظ الترتيب</ToolButton>
-            <ToolButton title="تحديث مباشر كل 30 ثانية" active={live} onClick={() => setLive(!live)}>{live ? "● مباشر" : "○ مباشر"}</ToolButton>
-            <ToolButton title="إظهار كل العناصر وإلغاء التمييز" onClick={() => { setFilters(emptyFilters()); if (cy.current) clearHighlight(cy.current); setSearch(""); }}>إظهار الكل</ToolButton>
+            <ToolButton title={t("إعادة الترتيب التلقائي", "Re-run automatic layout")} onClick={() => { kept.current = {}; clearPositions(); runLayout(layout); setNotice(t("أُعيد ترتيب الخريطة.", "The map has been re-arranged.")); }}>↻ {t("ترتيب", "Arrange")}</ToolButton>
+            <ToolButton title={t("تثبيت مواقع العناصر", "Lock node positions")} active={locked} onClick={() => setLocked(!locked)}>{locked ? t("🔒 مثبتة", "🔒 Locked") : t("🔓 تثبيت", "🔓 Lock")}</ToolButton>
+            <ToolButton title={t("حفظ الترتيب الحالي", "Save the current layout")} onClick={() => { if (cy.current) setNotice(getLang() === "en" ? `Saved positions for ${savePositions(cy.current)} node(s); they will be used next time.` : `تم حفظ مواقع ${savePositions(cy.current)} عنصراً، وستُستخدم عند فتح الخريطة.`); }}>💾 {t("حفظ الترتيب", "Save layout")}</ToolButton>
+            <ToolButton title={t("تحديث مباشر كل 30 ثانية", "Live refresh every 30 seconds")} active={live} onClick={() => setLive(!live)}>{live ? t("● مباشر", "● Live") : t("○ مباشر", "○ Live")}</ToolButton>
+            <ToolButton title={t("إظهار كل العناصر وإلغاء التمييز", "Show everything and clear highlight")} onClick={() => { setFilters(emptyFilters()); if (cy.current) clearHighlight(cy.current); setSearch(""); }}>{t("إظهار الكل", "Show all")}</ToolButton>
             <span className="mx-1 h-6 w-px bg-slate-200" />
-            <Button variant="secondary" onClick={() => { const uri = cy.current?.png({ full: true, scale: 2, bg: "#ffffff" }); if (uri) download("rased-network-map.png", uri); }}>
-              <IconDownload className="h-4 w-4" /> صورة
+            <Button variant="secondary" onClick={() => { const uri = cy.current?.png({ full: true, scale: 2, bg: "#ffffff" }); if (uri) download("rasednet-network-map.png", uri); }}>
+              <IconDownload className="h-4 w-4" /> {t("صورة", "Image")}
             </Button>
-            <Button variant="secondary" onClick={exportJson}><IconDownload className="h-4 w-4" /> بيانات JSON</Button>
+            <Button variant="secondary" onClick={exportJson}><IconDownload className="h-4 w-4" /> {t("بيانات JSON", "JSON data")}</Button>
             {can("scan:run") && (
               <div className="ms-auto flex flex-wrap items-center gap-1.5">
-                <input className={`${inputClass} w-40`} dir="ltr" placeholder="عنوان داخلي لتتبعه" value={traceTarget} onChange={(e) => setTraceTarget(e.target.value)} aria-label="عنوان لتتبع المسار إليه" />
+                <input className={`${inputClass} w-40`} dir="ltr" placeholder={t("عنوان داخلي لتتبعه", "Internal IP to trace")} value={traceTarget} onChange={(e) => setTraceTarget(e.target.value)} aria-label={t("عنوان لتتبع المسار إليه", "IP to trace the path to")} />
                 <Button onClick={() => trace.mutate(traceTarget.trim() ? [traceTarget.trim()] : [])} disabled={trace.isPending}>
-                  <IconRefresh className="h-4 w-4" /> {trace.isPending ? "جارٍ التتبع…" : "اكتشاف المسارات"}
+                  <IconRefresh className="h-4 w-4" /> {trace.isPending ? t("جارٍ التتبع…", "Tracing…") : t("اكتشاف المسارات", "Discover paths")}
                 </Button>
               </div>
             )}
@@ -346,15 +347,15 @@ export function TopologyPage() {
             {/* Filters */}
             <div className="space-y-3 text-sm">
               <div>
-                <div className="mb-1 font-semibold text-slate-700">العرض</div>
-                <label className="flex items-center gap-1.5"><input type="checkbox" checked={filters.hideOffline} onChange={(e) => setFilters({ ...filters, hideOffline: e.target.checked })} /> إخفاء غير المتصلة</label>
-                <label className="flex items-center gap-1.5"><input type="checkbox" checked={filters.infraOnly} onChange={(e) => setFilters({ ...filters, infraOnly: e.target.checked })} /> الموجّهات والمسارات فقط</label>
+                <div className="mb-1 font-semibold text-slate-700">{t("العرض", "Display")}</div>
+                <label className="flex items-center gap-1.5"><input type="checkbox" checked={filters.hideOffline} onChange={(e) => setFilters({ ...filters, hideOffline: e.target.checked })} /> {t("إخفاء غير المتصلة", "Hide offline")}</label>
+                <label className="flex items-center gap-1.5"><input type="checkbox" checked={filters.infraOnly} onChange={(e) => setFilters({ ...filters, infraOnly: e.target.checked })} /> {t("الموجّهات والمسارات فقط", "Routers & paths only")}</label>
                 {filters.hiddenIds.size > 0 && (
-                  <button type="button" className="mt-1 text-xs text-cyan-800 underline" onClick={() => setFilters({ ...filters, hiddenIds: new Set() })}>إظهار العناصر المخفية يدوياً ({filters.hiddenIds.size})</button>
+                  <button type="button" className="mt-1 text-xs text-cyan-800 underline" onClick={() => setFilters({ ...filters, hiddenIds: new Set() })}>{t("إظهار العناصر المخفية يدوياً", "Show manually hidden nodes")} ({filters.hiddenIds.size})</button>
                 )}
               </div>
               <div>
-                <div className="mb-1 font-semibold text-slate-700">أنواع الأجهزة</div>
+                <div className="mb-1 font-semibold text-slate-700">{t("أنواع الأجهزة", "Device types")}</div>
                 <div className="max-h-56 space-y-0.5 overflow-auto">
                   {Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).map(([t, n]) => (
                     <label key={t} className="flex items-center gap-1.5">
@@ -370,7 +371,7 @@ export function TopologyPage() {
                 </div>
               </div>
               <div>
-                <div className="mb-1 font-semibold text-slate-700">الشبكات</div>
+                <div className="mb-1 font-semibold text-slate-700">{t("الشبكات", "Networks")}</div>
                 <div className="max-h-56 space-y-0.5 overflow-auto">
                   {networks.map((n) => (
                     <label key={n.id} className="flex items-center gap-1.5">
@@ -385,18 +386,18 @@ export function TopologyPage() {
                 </div>
               </div>
               <div>
-                <div className="mb-1 font-semibold text-slate-700">الألوان ({COLOR_MODES[colorMode]})</div>
+                <div className="mb-1 font-semibold text-slate-700">{t("الألوان", "Colours")} ({colorModes()[colorMode]})</div>
                 <ul className="space-y-0.5 text-xs text-slate-600">
                   {legendColors[colorMode].map(([name, color]) => (
                     <li key={name}><span className="me-1.5 inline-block h-2.5 w-2.5 rounded-full align-middle" style={{ background: color }} />{name}</li>
                   ))}
                 </ul>
                 <ul className="mt-2 space-y-0.5 text-[11px] text-slate-500">
-                  <li>◆ موجّه / قفزة مسار — ▲ نقطة وصول — ■ خادم</li>
-                  <li><span className="me-1 inline-block h-0.5 w-5 bg-[#e11d48] align-middle" />مسار توجيه مرصود</li>
-                  <li><span className="me-1 inline-block w-5 border-t-2 border-dashed border-slate-400 align-middle" />علاقة مستنتجة</li>
-                  <li>إطار أصفر = بوابة الشبكة • إطار أحمر = تنبيهات</li>
-                  <li>حجم الجهاز يكبر بعدد خدماته المفتوحة</li>
+                  <li>{t("◆ موجّه / قفزة مسار — ▲ نقطة وصول — ■ خادم", "◆ router / path hop — ▲ access point — ■ server")}</li>
+                  <li><span className="me-1 inline-block h-0.5 w-5 bg-[#e11d48] align-middle" />{t("مسار توجيه مرصود", "Observed routing path")}</li>
+                  <li><span className="me-1 inline-block w-5 border-t-2 border-dashed border-slate-400 align-middle" />{t("علاقة مستنتجة", "Inferred relationship")}</li>
+                  <li>{t("إطار أصفر = بوابة الشبكة • إطار أحمر = تنبيهات", "Yellow border = gateway • red border = alerts")}</li>
+                  <li>{t("حجم الجهاز يكبر بعدد خدماته المفتوحة", "Node size grows with the number of open services")}</li>
                 </ul>
               </div>
             </div>
@@ -405,26 +406,26 @@ export function TopologyPage() {
             <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-[radial-gradient(circle_at_1px_1px,#e2e8f0_1px,transparent_0)] [background-size:22px_22px]">
               {query.isLoading && <div className="absolute inset-0 grid place-items-center"><Loading /></div>}
               {query.error && <div className="p-4"><ErrorBox error={query.error} /></div>}
-              {locked && <div className="absolute start-3 top-3 z-10 rounded-lg bg-slate-800/80 px-2 py-0.5 text-xs text-white">المواقع مثبتة</div>}
-              <div ref={container} dir="ltr" style={{ height: fullscreen ? "calc(100vh - 210px)" : "70vh", minHeight: 480 }} aria-label="خريطة الشبكة التفاعلية" />
+              {locked && <div className="absolute start-3 top-3 z-10 rounded-lg bg-slate-800/80 px-2 py-0.5 text-xs text-white">{t("المواقع مثبتة", "Positions locked")}</div>}
+              <div ref={container} dir="ltr" style={{ height: fullscreen ? "calc(100vh - 210px)" : "70vh", minHeight: 480 }} aria-label={t("خريطة الشبكة التفاعلية", "Interactive network map")} />
             </div>
 
             {/* Details */}
-            <Card title="التفاصيل">
-              {!selected ? <p className="text-sm text-slate-500">اختر عنصراً من الخريطة.</p> : selected.kind === "edge" ? (
+            <Card title={t("التفاصيل", "Details")}>
+              {!selected ? <p className="text-sm text-slate-500">{t("اختر عنصراً من الخريطة.", "Select a node on the map.")}</p> : selected.kind === "edge" ? (
                 <div className="space-y-1 text-sm">
-                  <div className="font-semibold">{EDGE_KINDS[selected.data.kind] ?? selected.data.kind}</div>
+                  <div className="font-semibold">{label(EDGE_KINDS, selected.data.kind)}</div>
                   <div>{selected.data.label_ar}</div>
-                  <Badge tone={selected.data.verified ? "green" : "amber"}>{selected.data.verified ? "علاقة مؤكدة (مرصودة)" : "علاقة مستنتجة"}</Badge>
+                  <Badge tone={selected.data.verified ? "green" : "amber"}>{selected.data.verified ? t("علاقة مؤكدة (مرصودة)", "Confirmed (observed) relationship") : t("علاقة مستنتجة", "Inferred relationship")}</Badge>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <NodeDetails node={selected.data} />
                   <div className="flex flex-wrap gap-1.5">
                     {selected.data.id !== "scanner" && (
-                      <Button variant="secondary" onClick={() => { if (cy.current) { const hops = highlightPath(cy.current, selected.data.id); setNotice(hops < 0 ? "لا يوجد مسار معروف من خادم راصد إلى هذا العنصر." : `المسار من خادم راصد: ${hops} وصلة.`); } }}>إظهار المسار من راصد</Button>
+                      <Button variant="secondary" onClick={() => { if (cy.current) { const hops = highlightPath(cy.current, selected.data.id); setNotice(hops < 0 ? t("لا يوجد مسار معروف من خادم راصد إلى هذا العنصر.", "No known path from the RasedNet server to this node.") : (getLang() === "en" ? `Path from the RasedNet server: ${hops} hop(s).` : `المسار من خادم راصد: ${hops} وصلة.`)); } }}>{t("إظهار المسار من راصد", "Show path from RasedNet")}</Button>
                     )}
-                    <Button variant="secondary" onClick={() => { if (cy.current) { focusNeighborhood(cy.current, selected.data.id, 1); cy.current.animate({ fit: { eles: cy.current.elements(".focus"), padding: 60 } }, { duration: 300 }); } }}>الجيران فقط</Button>
+                    <Button variant="secondary" onClick={() => { if (cy.current) { focusNeighborhood(cy.current, selected.data.id, 1); cy.current.animate({ fit: { eles: cy.current.elements(".focus"), padding: 60 } }, { duration: 300 }); } }}>{t("الجيران فقط", "Neighbours only")}</Button>
                     {selected.data.id !== "scanner" && (
                       <Button variant="ghost" onClick={() => {
                         const next = new Set(filters.hiddenIds);
@@ -432,13 +433,13 @@ export function TopologyPage() {
                         if (selected.data.type === "network") setFilters({ ...filters, hiddenNetworks: new Set([...filters.hiddenNetworks, selected.data.id]) });
                         else setFilters({ ...filters, hiddenIds: next });
                         setSelected(null);
-                      }}>إخفاء من الخريطة</Button>
+                      }}>{t("إخفاء من الخريطة", "Hide from the map")}</Button>
                     )}
                     {selected.data.asset_id && can("scan:run") && (
-                      <Button disabled={rescan.isPending} onClick={() => rescan.mutate(selected.data.asset_id as number)}>فحص هذا الجهاز</Button>
+                      <Button disabled={rescan.isPending} onClick={() => rescan.mutate(selected.data.asset_id as number)}>{t("فحص هذا الجهاز", "Scan this device")}</Button>
                     )}
                     {selected.data.ip && can("scan:run") && (
-                      <Button variant="secondary" disabled={trace.isPending} onClick={() => trace.mutate([selected.data.ip as string])}>تتبع المسار إليه</Button>
+                      <Button variant="secondary" disabled={trace.isPending} onClick={() => trace.mutate([selected.data.ip as string])}>{t("تتبع المسار إليه", "Trace the path to it")}</Button>
                     )}
                   </div>
                 </div>
@@ -456,14 +457,14 @@ function NodeDetails({ node }: { node: TopoNode }) {
     return (
       <div className="space-y-1 text-sm">
         <div className="font-semibold"><Ltr>{node.cidr}</Ltr></div>
-        {node.scope_name && <div>النطاق: {node.scope_name}</div>}
-        <div>النوع: {node.kind === "local" ? "متصلة مباشرة بخادم الفحص" : node.kind === "scope" ? "نطاق فحص" : "مستنتجة من الأجهزة المرصودة"}</div>
-        <div>الأجهزة: {node.devices ?? 0} (متصل الآن: {node.online ?? 0})</div>
+        {node.scope_name && <div>{t("النطاق:", "Scope:")} {node.scope_name}</div>}
+        <div>{t("النوع:", "Type:")} {node.kind === "local" ? t("متصلة مباشرة بخادم الفحص", "Directly connected to the scanner") : node.kind === "scope" ? t("نطاق فحص", "Scan scope") : t("مستنتجة من الأجهزة المرصودة", "Inferred from observed devices")}</div>
+        <div>{t("الأجهزة:", "Devices:")} {node.devices ?? 0} ({t("متصل الآن:", "online now:")} {node.online ?? 0})</div>
       </div>
     );
   }
   if (node.type === "scanner") {
-    return <div className="text-sm">خادم راصد — العناوين: <Ltr>{(node.ips ?? []).join(", ")}</Ltr></div>;
+    return <div className="text-sm">{t("خادم راصد — العناوين:", "RasedNet server — addresses:")} <Ltr>{(node.ips ?? []).join(", ")}</Ltr></div>;
   }
   return (
     <div className="space-y-1.5 text-sm">
@@ -471,14 +472,14 @@ function NodeDetails({ node }: { node: TopoNode }) {
       <div><Ltr>{node.ip}</Ltr>{node.mac && <> — <Ltr className="text-xs">{node.mac}</Ltr></>}</div>
       <div>{label(DEVICE_TYPES, node.device_type)}{node.os_family && node.os_family !== "unknown" ? ` — ${label(OS_FAMILIES, node.os_family)}` : ""}</div>
       {(node.model || node.vendor) && <div className="text-slate-600">{node.model ?? node.vendor}</div>}
-      {node.type === "device" && <div className="text-xs text-slate-600">خدمات مفتوحة: {node.open_services ?? 0}</div>}
+      {node.type === "device" && <div className="text-xs text-slate-600">{t("خدمات مفتوحة:", "Open services:")} {node.open_services ?? 0}</div>}
       <div className="flex flex-wrap gap-1">
         {node.status && <Badge tone={STATUS_TONE[node.status]}>{label(ASSET_STATUS, node.status)}</Badge>}
-        {node.is_gateway && <Badge tone="amber">بوابة الشبكة</Badge>}
-        {node.type === "hop" && <Badge tone="red">قفزة توجيه (غير مفحوصة)</Badge>}
-        {(node.open_alerts ?? 0) > 0 && <Badge tone="red">تنبيهات: {node.open_alerts}</Badge>}
+        {node.is_gateway && <Badge tone="amber">{t("بوابة الشبكة", "Network gateway")}</Badge>}
+        {node.type === "hop" && <Badge tone="red">{t("قفزة توجيه (غير مفحوصة)", "Routing hop (not scanned)")}</Badge>}
+        {(node.open_alerts ?? 0) > 0 && <Badge tone="red">{t("تنبيهات:", "Alerts:")} {node.open_alerts}</Badge>}
       </div>
-      {node.asset_id && <Link className="text-cyan-800 underline" to={`/assets/${node.asset_id}`}>فتح صفحة الجهاز</Link>}
+      {node.asset_id && <Link className="text-cyan-800 underline" to={`/assets/${node.asset_id}`}>{t("فتح صفحة الجهاز", "Open device page")}</Link>}
     </div>
   );
 }

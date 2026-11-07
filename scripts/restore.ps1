@@ -1,7 +1,7 @@
 ﻿<#
 .SYNOPSIS
   Restores an encrypted backup. The file is verified (SHA-256 + GCM tag) BEFORE anything in
-  the database is touched. Stop the RASED server first.
+  the database is touched. Stop the RasedNet server first.
 #>
 param([Parameter(Mandatory = $true)][string]$BackupFile, [string]$PgBin, [switch]$Force)
 . "$PSScriptRoot\common.ps1"
@@ -14,7 +14,7 @@ if (Test-Path $sumFile) {
     if ($expected -ne $actual) { throw 'بصمة SHA-256 لا تطابق: الملف تالف أو معدّل. لن تتم الاستعادة.' }
 } else { Write-Warning 'لا يوجد ملف بصمة .sha256؛ سيتم الاعتماد على التحقق المدمج في التشفير فقط.' }
 
-$plain = Join-Path ([IO.Path]::GetTempPath()) ("rased-restore-" + [Guid]::NewGuid().ToString('N') + '.dump')
+$plain = Join-Path ([IO.Path]::GetTempPath()) ("rasednet-restore-" + [Guid]::NewGuid().ToString('N') + '.dump')
 try {
     Invoke-Rased @('decrypt-file', $BackupFile, $plain)   # throws on wrong passphrase / tampering
     $pg = Get-PgConnection
