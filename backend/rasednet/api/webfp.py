@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -21,6 +22,15 @@ def web_fingerprint(asset_id: int, request: Request, auth: AuthContext = Depends
     asset = db.get(Asset, asset_id)
     if asset is None or not asset.current_ip:
         raise HTTPException(status.HTTP_404_NOT_FOUND, tr("الجهاز غير موجود أو بلا عنوان IP", "Device not found or has no IP address"))
+    # SSRF guard: only fetch private LAN addresses — never the loopback (the RasedNet
+    # server itself) nor any public/routable address.
+    try:
+        ip_obj = ipaddress.ip_address(asset.current_ip)
+    except ValueError:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, tr("عنوان IP غير صالح", "Invalid IP address"))
+    if ip_obj.is_loopback or not ip_obj.is_private:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT,
+                            tr("بصمة الويب متاحة لعناوين الشبكة المحلية الخاصة فقط", "Web fingerprinting is limited to private LAN addresses"))
     web_ports = [s.port for s in asset.services if s.state == "open" and s.port in WEB_PORTS]
     if not web_ports:
         raise HTTPException(status.HTTP_409_CONFLICT, tr("لا توجد خدمة ويب مفتوحة على هذا الجهاز", "No open web service on this device"))

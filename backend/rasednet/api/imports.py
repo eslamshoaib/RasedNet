@@ -26,6 +26,10 @@ MAX_UPLOAD = 25 * 1024 * 1024  # 25 MB
 
 
 async def _read_body(request: Request) -> bytes:
+    # Reject oversized uploads up-front from the declared length, before buffering the body.
+    declared = request.headers.get("content-length", "")
+    if declared.isdigit() and int(declared) > MAX_UPLOAD:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, tr("الملف أكبر من الحد المسموح (25 ميجابايت).", "The file is larger than the allowed limit (25 MB)."))
     body = await request.body()
     if not body:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, tr("لم يُرسل أي ملف.", "No file was sent."))

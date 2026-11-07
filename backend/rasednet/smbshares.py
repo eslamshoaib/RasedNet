@@ -94,6 +94,9 @@ def browse(ip: str, share: str, subpath: str = "", *, timeout: int = 6) -> dict[
     """List entries under a share path, anonymously. Read-only; names/sizes/dates only."""
     if share.strip().lower() in ADMIN_SHARES:
         raise SmbError(tr("لا يُسمح بتصفح المشاركات الإدارية.", "Browsing administrative shares is not allowed."))
+    # A share name is a single path segment: reject separators and traversal in it.
+    if not share.strip() or any(c in share for c in "\\/") or ".." in share:
+        raise SmbError(tr("اسم مشاركة غير صالح.", "Invalid share name."))
     subpath = subpath.replace("/", "\\").strip("\\")
     if ".." in subpath.split("\\"):
         raise SmbError(tr("مسار غير صالح.", "Invalid path."))
