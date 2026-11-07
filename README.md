@@ -11,7 +11,7 @@
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB)
 ![FastAPI](https://img.shields.io/badge/FastAPI-async-009688)
 ![React](https://img.shields.io/badge/React-19-61DAFB)
-![License](https://img.shields.io/badge/License-Proprietary-1E293B)
+![License](https://img.shields.io/badge/License-Free%20Use%20·%20No%20Modify-1E293B)
 
 </div>
 
@@ -146,7 +146,9 @@ docs/                 المعمارية، نموذج التهديد، ودلي�
 
 ## 📜 الرخصة · License
 
-برنامج احتكاري (Proprietary). جميع الحقوق محفوظة — **Eslam Shoaib**. انظر [`LICENSE`](LICENSE).
+**استخدام حر، بدون تعديل** — يحقّ لأي شخص **تحميل راصد وتشغيله واستخدامه مجاناً** وإعادة توزيع نسخة مطابقة غير معدّلة، مع إبقاء إشعارات الحقوق. **لا يجوز** تعديله أو اشتقاق نسخ منه أو نشر نسخ معدّلة. جميع الحقوق محفوظة — **Eslam Shoaib**. التفاصيل في [`LICENSE`](LICENSE).
+
+**Free to use, no modification** — anyone may **download, run and use** RasedNet for free and redistribute verbatim, unmodified copies (keeping the notices). Modifying or creating derivative works is not permitted. See [`LICENSE`](LICENSE).
 
 <div align="center">
 
