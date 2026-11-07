@@ -26,3 +26,6 @@ dist/
 *.egg-info/
 .venv/
 scratchpad/
+
+# editor
+.vscode/
